@@ -18,6 +18,34 @@ public static Connection connectDB() {
         return con;
     }
 
+
+// === NEW: Alternative connection with WAL mode ===
+    public static Connection connectSafeDB() {
+        Connection con = null;
+        try {
+            Class.forName("org.sqlite.JDBC");
+            // WAL mode allows better concurrency
+            con = DriverManager.getConnection("jdbc:sqlite:barterzone.db?journal_mode=WAL");
+            System.out.println("Connection Successful (WAL mode)");
+        } catch (Exception e) {
+            System.out.println("Connection Failed: " + e);
+        }
+        return con;
+    }
+
+    // === NEW: closeQuietly utility ===
+    public static void closeQuietly(AutoCloseable... resources) {
+        for (AutoCloseable res : resources) {
+            if (res != null) {
+                try {
+                    res.close();
+                } catch (Exception e) {
+                    System.out.println("Error closing resource: " + e.getMessage());
+                }
+            }
+        }
+    }
+
 public void addRecord(String sql, Object... values) {
     try (Connection conn = this.connectDB(); // Use the connectDB method
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
