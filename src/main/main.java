@@ -38,7 +38,7 @@ public class main {
                         username = scan.nextLine();
 
                         try (Connection connection = con.connectDB()) {
-                            String usernameSQL = "SELECT COUNT(*) FROM tbl_traders WHERE tbl_Username = ?";
+                            String usernameSQL = "SELECT COUNT(*) FROM tbl_trader WHERE tbl_Username = ?";
                             PreparedStatement pstmt = connection.prepareStatement(usernameSQL);
                             pstmt.setString(1, username);
                             ResultSet rs = pstmt.executeQuery();
@@ -46,7 +46,7 @@ public class main {
                             if (rs.next() && rs.getInt(1) > 0) {
                                 System.out.println(" Username is already used. Enter another username.\n");
                             } else {
-                                break; 
+                                break;
                             }
                         } catch (Exception e) {
                             System.out.println("⚠ Error checking username: " + e.getMessage());
@@ -68,14 +68,13 @@ public class main {
                     System.out.print("Enter Location: ");
                     String location = scan.nextLine();
 
-                    String sqlRegister = "INSERT INTO tbl_traders (tbl_Username, tbl_Password, tbl_FullName, tbl_Email, tbl_Contact, tbl_Location, tbl_Status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    String sqlRegister = "INSERT INTO tbl_trader (tbl_Username, tbl_Password, tbl_FullName, tbl_Email, tbl_Contact, tbl_Location, tbl_Status) VALUES (?, ?, ?, ?, ?, ?, ?)";
                     con.addRecord(sqlRegister, username, password, fullName, email, contact, location, "pending");
                     System.out.println("Trader registered successfully! (Status: pending, wait for admin approval)");
 
                     break;
 
                 case 2:
-                    boolean loginTried = false;
                     System.out.println("\n--- Trader Login ---");
                     System.out.print("Enter Username: ");
                     String loginUser = scan.nextLine();
@@ -84,7 +83,7 @@ public class main {
                     String loginPass = scan.nextLine();
 
                     try (Connection connection = con.connectDB()) {
-                        String loginSQL = "SELECT * FROM tbl_traders WHERE tbl_Username = ? AND tbl_Password = ?";
+                        String loginSQL = "SELECT * FROM tbl_trader WHERE tbl_Username = ? AND tbl_Password = ?";
                         PreparedStatement pstmt = connection.prepareStatement(loginSQL);
                         pstmt.setString(1, loginUser);
                         pstmt.setString(2, loginPass);
@@ -93,16 +92,16 @@ public class main {
                         if (rs.next()) {
                             String status = rs.getString("tbl_Status");
                             if ("approved".equalsIgnoreCase(status)) {
-                                System.out.println("✅ Login successful! Welcome, " + rs.getString("tbl_FullName"));
-                                TraderOption traderOption = new TraderOption(con);
+                                int traderId = rs.getInt("trader_id"); 
+                                System.out.println(" Login successful! Welcome, " + rs.getString("tbl_FullName"));
+
+                                TraderOption traderOption = new TraderOption(con, traderId); 
                                 traderOption.showTraderMenu(scan);
                             } else {
-                                System.out.println(" Your account is still '" + status + "'. Please wait for admin approval.");
-                                System.out.println(" Please try again later.");
+                                System.out.println("⚠ Your account is still '" + status + "'. Please wait for admin approval.");
                             }
                         } else {
-                            System.out.println(" Invalid username or password!");
-                            System.out.println(" Wrong username and password, try again!");
+                            System.out.println("❌ Invalid username or password!");
                         }
                     } catch (Exception e) {
                         System.out.println("⚠ Error during login: " + e.getMessage());
@@ -110,42 +109,19 @@ public class main {
                     break;
 
                 case 3:
-                    int adminChoice = 0;
-                    while (adminChoice != 2) {
-                        System.out.println("\n--- ADMIN MENU ---");
-                        System.out.println("1. Manage Trader Status (pending, aprroved, declined)");
-                        System.out.println("2. Back to Main Menu");
-                        System.out.print("Select option: ");
-                        adminChoice = scan.nextInt();
-                        scan.nextLine();
+                    System.out.println("\n--- ADMIN LOGIN ---");
+                    System.out.print("Enter Admin Username: ");
+                    String adminUser = scan.nextLine();
 
-                        switch (adminChoice) {
-                            case 1:
-                                String[] headers = {"ID", "Username", "Full Name", "Email", "Contact", "Location", "Status"};
-                                String[] cols = {"trader_id", "tbl_Username", "tbl_FullName", "tbl_Email", "tbl_Contact", "tbl_Location", "tbl_Status"};
-                                String sqlView = "SELECT * FROM tbl_traders";
-                                con.viewRecords(sqlView, headers, cols);
+                    System.out.print("Enter Admin Password: ");
+                    String adminPass = scan.nextLine();
 
-                                System.out.print("Enter Trader ID to update status: ");
-                                int traderId = scan.nextInt();
-                                scan.nextLine();
-
-                                System.out.print("Enter new status (pending / approved / declined): ");
-                                String newStatus = scan.nextLine();
-
-                                String sqlUpdate = "UPDATE tbl_traders SET tbl_Status = ? WHERE trader_id = ?";
-                                con.updateRecord(sqlUpdate, newStatus, traderId);
-
-                                System.out.println("Trader status updated!");
-                                break;
-
-                            case 2:
-                                System.out.println("Returning to Main Menu...");
-                                break;
-
-                            default:
-                                System.out.println("Invalid option!");
-                        }
+                    if (adminUser.equals("admin") && adminPass.equals("jaylord")) {
+                        System.out.println(" Admin login successful!");
+                        AdminOption adminOption = new AdminOption(con);
+                        adminOption.showAdminMenu(scan);
+                    } else {
+                        System.out.println(" Invalid admin account! Returning to Main Menu...");
                     }
                     break;
 
