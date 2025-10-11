@@ -33,7 +33,7 @@ public class TraderOption {
 
         String sql = "INSERT INTO tbl_items (trader_id, item_Name, item_Brand, item_Condition, item_Date, item_Description) VALUES (?, ?, ?, ?, ?, ?)";
         con.addRecord(sql, traderId, itemName, brand, condition, dateBought, description);
-        System.out.println("✅ Item offered successfully!");
+        System.out.println(" Item offered successfully!");
     }
 
     public void viewOwnItems() {
@@ -82,8 +82,8 @@ public class TraderOption {
             return;
         }
 
-        String sql = "INSERT INTO tbl_trades (offer_trader_id, target_trader_id, item_id, status, date_requested) VALUES (?, ?, ?, ?, datetime('now'))";
-        con.addRecord(sql, traderId, targetTraderId, itemId, "pending");
+        String sqlrequest = "INSERT INTO tbl_trades (offer_trader_id, target_trader_id, item_id, status, date_requested) VALUES (?, ?, ?, ?, datetime('now'))";
+        con.addRecord(sqlrequest, traderId, targetTraderId, itemId, "pending");
         System.out.println("✅ Trade request sent successfully!");
     }
 
@@ -109,9 +109,9 @@ public class TraderOption {
         System.out.print("Accept or Decline? (approved/declined): ");
         String newStatus = scan.nextLine();
 
-        String sql = "UPDATE tbl_trades SET status = ? WHERE trade_id = ?";
-        con.updateRecord(sql, newStatus, tradeId);
-        System.out.println("✅ Trade " + newStatus + "!");
+        String sqlrespond = "UPDATE tbl_trades SET status = ? WHERE trade_id = ?";
+        con.updateRecord(sqlrespond, newStatus, tradeId);
+        System.out.println(" Trade " + newStatus + "!");
     }
 
     public void showTraderMenu(Scanner scan) {

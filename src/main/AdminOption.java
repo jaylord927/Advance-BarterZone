@@ -30,8 +30,8 @@ public class AdminOption {
         String confirm = scan.nextLine().trim().toLowerCase();
 
         if (confirm.equals("yes")) {
-            String sql = "UPDATE tbl_trader SET tbl_Status = ? WHERE trader_id = ?";
-            con.updateRecord(sql, newStatus, traderId);
+            String sqlupdate = "UPDATE tbl_trader SET tbl_Status = ? WHERE trader_id = ?";
+            con.updateRecord(sqlupdate, newStatus, traderId);
             System.out.println(" Trader status updated successfully!");
         } else {
             System.out.println(" Update cancelled.");
@@ -48,8 +48,8 @@ public class AdminOption {
         String confirm = scan.nextLine().trim().toLowerCase();
 
         if (confirm.equals("yes")) {
-            String sql = "DELETE FROM tbl_trader WHERE trader_id = ?";
-            con.deleteRecord(sql, traderId);
+            String sqldelete = "DELETE FROM tbl_trader WHERE trader_id = ?";
+            con.deleteRecord(sqldelete, traderId);
             System.out.println(" Trader account deleted successfully!");
         } else {
             System.out.println(" Deletion cancelled.");

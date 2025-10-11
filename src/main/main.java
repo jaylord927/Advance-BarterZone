@@ -101,7 +101,7 @@ public class main {
                                 System.out.println("⚠ Your account is still '" + status + "'. Please wait for admin approval.");
                             }
                         } else {
-                            System.out.println("❌ Invalid username or password!");
+                            System.out.println(" Invalid username or password!");
                         }
                     } catch (Exception e) {
                         System.out.println("⚠ Error during login: " + e.getMessage());

@@ -178,5 +178,47 @@ public void deleteRecord(String sql, Object... values) {
     }
 }
 
+// === NEW: Safe insert method to avoid SQLITE_BUSY (non-blocking) ===
+public void addRecordSafe(String sql, Object... values) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+
+    try {
+        // use busy_timeout + WAL mode for smoother writes
+        conn = DriverManager.getConnection("jdbc:sqlite:barterzone.db?busy_timeout=5000&journal_mode=WAL");
+        pstmt = conn.prepareStatement(sql);
+
+        // dynamically bind parameters (same as your original addRecord)
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] instanceof Integer) {
+                pstmt.setInt(i + 1, (Integer) values[i]);
+            } else if (values[i] instanceof Double) {
+                pstmt.setDouble(i + 1, (Double) values[i]);
+            } else if (values[i] instanceof Float) {
+                pstmt.setFloat(i + 1, (Float) values[i]);
+            } else if (values[i] instanceof Long) {
+                pstmt.setLong(i + 1, (Long) values[i]);
+            } else if (values[i] instanceof Boolean) {
+                pstmt.setBoolean(i + 1, (Boolean) values[i]);
+            } else if (values[i] instanceof java.util.Date) {
+                pstmt.setDate(i + 1, new java.sql.Date(((java.util.Date) values[i]).getTime()));
+            } else if (values[i] instanceof java.sql.Date) {
+                pstmt.setDate(i + 1, (java.sql.Date) values[i]);
+            } else if (values[i] instanceof java.sql.Timestamp) {
+                pstmt.setTimestamp(i + 1, (java.sql.Timestamp) values[i]);
+            } else {
+                pstmt.setString(i + 1, values[i].toString());
+            }
+        }
+
+        pstmt.executeUpdate();
+        System.out.println("✅ Record added successfully (safe mode)!");
+
+    } catch (SQLException e) {
+        System.out.println("⚠ Error adding record (safe mode): " + e.getMessage());
+    } finally {
+        closeQuietly(pstmt, conn); // ensures clean close
+    }
+}
 
 }
