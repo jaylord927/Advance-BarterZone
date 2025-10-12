@@ -31,77 +31,71 @@ public class TraderOption {
         System.out.print("Enter Description: ");
         String description = scan.nextLine();
 
-        String sql = "INSERT INTO tbl_items (trader_id, item_Name, item_Brand, item_Condition, item_Date, item_Description) VALUES (?, ?, ?, ?, ?, ?)";
-        con.addRecord(sql, traderId, itemName, brand, condition, dateBought, description);
+        String sql = "INSERT INTO tbl_items (item_Name, item_Brand, item_Condition, item_Date, item_Description) VALUES (?, ?, ?, ?, ?)";
+        con.addRecord(sql, itemName, brand, condition, dateBought, description);
         System.out.println(" Item offered successfully!");
     }
 
-    public void viewOwnItems() {
-        String query = "SELECT * FROM tbl_items WHERE trader_id = " + traderId;
+    public void ViewMyItems() {
+        String query = "SELECT * FROM tbl_items WHERE trader_id = ";
         String[] headers = {"Item ID", "Item Name", "Brand", "Condition", "Date Bought", "Description"};
         String[] columns = {"item_id", "item_Name", "item_Brand", "item_Condition", "item_Date", "item_Description"};
         con.viewRecords(query, headers, columns);
     }
 
-    public void viewOtherItems() {
-        String query =
-                "SELECT i.item_id, i.item_Name, i.item_Brand, i.item_Condition, " +
-                "i.item_Date, i.item_Description, t.tbl_FullName " +
-                "FROM tbl_items i " +
-                "JOIN tbl_trader t ON i.trader_id = t.trader_id " +
-                "WHERE i.trader_id != " + traderId;
+    public void UpdateMyItem(Scanner scan) {
+        System.out.print("Enter Item ID: ");
+        int item_id = scan.nextInt();
 
-        String[] headers = {"Item ID", "Item Name", "Brand", "Condition", "Date Bought", "Description", "Owner"};
-        String[] columns = {"item_id", "item_Name", "item_Brand", "item_Condition", "item_Date", "item_Description", "tbl_FullName"};
-        con.viewRecords(query, headers, columns);
+        System.out.print("\nEnter New Item name: ");
+        String new_item = scan.next();
+
+        System.out.print("Enter New Brand: ");
+        String new_brand = scan.next();
+
+        System.out.print("Enter New Condition: ");
+        String new_condition = scan.next();
+
+        System.out.print("Enter New date Bought: ");
+        String new_date = scan.next();
+
+        System.out.print("Enter New Item Description: ");
+        String new_description = scan.next();
+
+        String sqlUpdate = "UPDATE tbl_items SET item_Name = ?, item_Brand = ?, item_Condition = ?, item_Date = ?, item_Description = ? WHERE item_id = ? ";
+        con.updateRecord(sqlUpdate, new_item, new_brand, new_condition, new_date, new_description, item_id);
+        System.out.println(" Item updated successfully!");
+
+    }
+
+    public void DeleteMyItem(Scanner scan) {
+        ViewMyItems();
+
+        System.out.print("Enter Item ID: ");
+        int item_id = scan.nextInt();
+
+        String SqlDlete = "DELETE FROM tbl_items WHERE item_id = ?";
+        con.deleteRecord(SqlDlete, item_id);
+
+    }
+
+    public void viewOtherItems() {
+        System.out.println("VIEW OTHER ITEM");
     }
 
     public void requestTrade(Scanner scan) {
-        viewOtherItems();
-        System.out.print("\nEnter Item ID you want to trade for: ");
-        int itemId = scan.nextInt();
-        scan.nextLine();
-
-        String getTraderSQL = "SELECT trader_id FROM tbl_items WHERE item_id = ?";
-        int targetTraderId = -1;
-
-        try (Connection conn = con.connectDB();
-             PreparedStatement pstmt = conn.prepareStatement(getTraderSQL)) {
-            pstmt.setInt(1, itemId);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                targetTraderId = rs.getInt("trader_id");
-            }
-        } catch (Exception e) {
-            System.out.println("⚠ Error finding target trader: " + e.getMessage());
-            return;
-        }
-
-        if (targetTraderId == -1) {
-            System.out.println("❌ Item not found.");
-            return;
-        }
-
-        String sqlrequest = "INSERT INTO tbl_trades (offer_trader_id, target_trader_id, item_id, status, date_requested) VALUES (?, ?, ?, ?, datetime('now'))";
-        con.addRecord(sqlrequest, traderId, targetTraderId, itemId, "pending");
-        System.out.println("✅ Trade request sent successfully!");
+        System.out.println("Find an Item");
     }
 
-    public void viewTradeRequests() {
-        String query =
-                "SELECT tr.trade_id, t.tbl_FullName AS Offerer, i.item_Name, tr.status " +
-                "FROM tbl_trades tr " +
-                "JOIN tbl_trader t ON tr.offer_trader_id = t.trader_id " +
-                "JOIN tbl_items i ON tr.item_id = i.item_id " +
-                "WHERE tr.target_trader_id = " + traderId;
-
-        String[] headers = {"Trade ID", "Offerer", "Item Name", "Status"};
-        String[] columns = {"trade_id", "Offerer", "item_Name", "status"};
-        con.viewRecords(query, headers, columns);
+    public void viewTradeRequests(Scanner scan) {
+        viewOtherItems();
+        System.out.println("Check your trade Requests");
+        System.out.println("Enter Item ID");
+        int id = scan.nextInt();
     }
 
     public void respondTrade(Scanner scan) {
-        viewTradeRequests();
+        viewTradeRequests(scan);
         System.out.print("Enter Trade ID to respond: ");
         int tradeId = scan.nextInt();
         scan.nextLine();
@@ -114,17 +108,19 @@ public class TraderOption {
         System.out.println(" Trade " + newStatus + "!");
     }
 
-    public void showTraderMenu(Scanner scan) {
+    public void TraderMenu(Scanner scan) {
         int choice;
         do {
             System.out.println("\n========== TRADER MENU ==========");
             System.out.println("1. Offer Item");
-            System.out.println("2. View My Items");
-            System.out.println("3. View Other Traders' Items");
-            System.out.println("4. Request Trade");
-            System.out.println("5. View Trade Requests");
-            System.out.println("6. Respond to Trade");
-            System.out.println("7. Logout");
+            System.out.println("2. View your Items");
+            System.out.println("3. Update your item");
+            System.out.println("4. Delete your item");
+            System.out.println("5. View Other Traders' Items");
+            System.out.println("6. Request Trade");
+            System.out.println("7. View Trade Requests");
+            System.out.println("8. Respond to Trade");
+            System.out.println("9. Logout");
             System.out.print("Select option: ");
 
             while (!scan.hasNextInt()) {
@@ -141,28 +137,34 @@ public class TraderOption {
                     offerItem(scan);
                     break;
                 case 2:
-                    viewOwnItems();
+                    ViewMyItems();
                     break;
                 case 3:
-                    viewOtherItems();
+                    UpdateMyItem(scan);
                     break;
                 case 4:
-                    requestTrade(scan);
+                    DeleteMyItem(scan);
                     break;
                 case 5:
-                    viewTradeRequests();
+                    viewOtherItems();
                     break;
                 case 6:
-                    respondTrade(scan);
+                    requestTrade(scan);
                     break;
                 case 7:
-                    System.out.println("Logging out...");
+                    viewTradeRequests(scan);
                     break;
+                case 8:
+                    respondTrade(scan);                   
+                    break;
+                case 9:
+                    System.out.println("Logging out...");
+                    break;               
                 default:
                     System.out.println("Invalid option!");
                     break;
             }
 
-        } while (choice != 7);
+        } while (choice != 9);
     }
 }

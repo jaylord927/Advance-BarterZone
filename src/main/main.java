@@ -96,7 +96,7 @@ public class main {
                                 System.out.println(" Login successful! Welcome, " + rs.getString("tbl_FullName"));
 
                                 TraderOption traderOption = new TraderOption(con, traderId); 
-                                traderOption.showTraderMenu(scan);
+                                traderOption.TraderMenu(scan);
                             } else {
                                 System.out.println("⚠ Your account is still '" + status + "'. Please wait for admin approval.");
                             }
