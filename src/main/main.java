@@ -119,7 +119,7 @@ public class main {
                     if (adminUser.equals("admin") && adminPass.equals("jaylord")) {
                         System.out.println(" Admin login successful!");
                         AdminOption adminOption = new AdminOption(con);
-                        adminOption.showAdminMenu(scan);
+                        adminOption.AdminMenu(scan);
                     } else {
                         System.out.println(" Invalid admin account! Returning to Main Menu...");
                     }

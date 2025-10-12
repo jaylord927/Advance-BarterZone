@@ -56,7 +56,7 @@ public class AdminOption {
         }
     }
 
-    public void showAdminMenu(Scanner scan) {
+    public void AdminMenu(Scanner scan) {
         int adminChoice;
         do {
             System.out.println("\n--- ADMIN MENU ---");
