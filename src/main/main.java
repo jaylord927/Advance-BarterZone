@@ -59,7 +59,7 @@ public class main {
                     System.out.print("Enter Full Name: ");
                     String fullName = scan.nextLine();
 
-                    System.out.print("Enter Email: ");
+                    System.out.print("Enter Email: ");  
                     String email = scan.nextLine();
 
                     System.out.print("Enter Contact: ");
