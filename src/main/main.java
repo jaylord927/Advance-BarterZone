@@ -59,7 +59,7 @@ public class main {
                     System.out.print("Enter Full Name: ");
                     String fullName = scan.nextLine();
 
-                    System.out.print("Enter Email: ");  
+                    System.out.print("Enter Email: ");
                     String email = scan.nextLine();
 
                     System.out.print("Enter Contact: ");
@@ -92,10 +92,10 @@ public class main {
                         if (rs.next()) {
                             String status = rs.getString("tbl_Status");
                             if ("approved".equalsIgnoreCase(status)) {
-                                int traderId = rs.getInt("trader_id"); 
+                                int traderId = rs.getInt("trader_id");
                                 System.out.println(" Login successful! Welcome, " + rs.getString("tbl_FullName"));
 
-                                TraderOption traderOption = new TraderOption(con, traderId); 
+                                TraderOption traderOption = new TraderOption(con, traderId);
                                 traderOption.TraderMenu(scan);
                             } else {
                                 System.out.println("⚠ Your account is still '" + status + "'. Please wait for admin approval.");
@@ -109,19 +109,30 @@ public class main {
                     break;
 
                 case 3:
+                    SuperAdmin.ensureDefaultAdmin(con);
+
                     System.out.println("\n--- ADMIN LOGIN ---");
                     System.out.print("Enter Admin Username: ");
                     String adminUser = scan.nextLine();
-
                     System.out.print("Enter Admin Password: ");
                     String adminPass = scan.nextLine();
 
-                    if (adminUser.equals("admin") && adminPass.equals("jaylord")) {
-                        System.out.println(" Admin login successful!");
-                        AdminOption adminOption = new AdminOption(con);
-                        adminOption.AdminMenu(scan);
-                    } else {
-                        System.out.println(" Invalid admin account! Returning to Main Menu...");
+                    try (Connection conn = con.connectDB()) {
+                        String sql = "SELECT * FROM tbl_admin WHERE admin_username = ? AND admin_password = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, adminUser);
+                        pstmt.setString(2, adminPass);
+                        ResultSet rs = pstmt.executeQuery();
+
+                        if (rs.next()) {
+                            System.out.println(" Admin login successful! Welcome, " + adminUser);
+                            AdminOption adminOption = new AdminOption(con);
+                            adminOption.AdminMenu(scan);
+                        } else {
+                            System.out.println(" Invalid admin credentials.");
+                        }
+                    } catch (Exception e) {
+                        System.out.println("⚠ Error during admin login: " + e.getMessage());
                     }
                     break;
 
