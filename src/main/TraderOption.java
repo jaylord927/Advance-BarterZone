@@ -159,7 +159,7 @@ public class TraderOption {
         scan.nextLine();
 
         if (itemId == 0) {
-            System.out.println("❌ Update cancelled.");
+            System.out.println(" Update cancelled.");
             return;
         }
 
@@ -245,75 +245,77 @@ public class TraderOption {
     // ----------------------------------------------------
 // 4. DELETE MY ITEM 
 // ----------------------------------------------------
-public void DeleteMyItem(Scanner scan) {
-    System.out.println("\n--- DELETE MY ITEM ---");
+    public void DeleteMyItem(Scanner scan) {
+        System.out.println("\n--- DELETE MY ITEM ---");
 
-    ViewMyItems();
+        ViewMyItems();
 
-    System.out.print("\nEnter Item ID to delete (or 0 to cancel): ");
-    int itemId = scan.nextInt();
-    scan.nextLine(); 
+        System.out.print("\nEnter Item ID to delete (or 0 to cancel): ");
+        int itemId = scan.nextInt();
+        scan.nextLine();
 
-    if (itemId == 0) {
-        System.out.println(" Deletion cancelled.");
-        return;
-    }
-
-    String checkSQL = "SELECT item_Name, item_Brand, item_Condition, item_Date, item_Description "
-                    + "FROM tbl_items WHERE items_id = ? AND trader_id = ?";
-
-    try (Connection conn = config.connectDB();
-         PreparedStatement checkStmt = conn.prepareStatement(checkSQL)) {
-
-        checkStmt.setInt(1, itemId);
-        checkStmt.setInt(2, traderId);
-        ResultSet rs = checkStmt.executeQuery();
-
-        if (!rs.next()) {
-            System.out.println(" No item found with that ID or it doesn’t belong to you.");
-            return;
-        }
-
-        System.out.println("\nItem details to be deleted:");
-        System.out.println("-------------------------------------------");
-        System.out.println("Item Name    : " + rs.getString("item_Name"));
-        System.out.println("Brand        : " + rs.getString("item_Brand"));
-        System.out.println("Condition    : " + rs.getString("item_Condition"));
-        System.out.println("Date Bought  : " + rs.getString("item_Date"));
-        System.out.println("Description  : " + rs.getString("item_Description"));
-        System.out.println("-------------------------------------------");
-
-        System.out.print("Are you sure you want to delete this item? (yes/no): ");
-        String confirm = scan.nextLine().trim().toLowerCase();
-
-        if (!confirm.equals("yes")) {
+        if (itemId == 0) {
             System.out.println(" Deletion cancelled.");
             return;
         }
 
-        String sqlDelete = "DELETE FROM tbl_items WHERE items_id = ? AND trader_id = ?";
-        con.deleteRecord(sqlDelete, itemId, traderId);
+        String checkSQL = "SELECT item_Name, item_Brand, item_Condition, item_Date, item_Description "
+                + "FROM tbl_items WHERE items_id = ? AND trader_id = ?";
 
-        System.out.println(" Item deleted successfully!");
+        try (Connection conn = config.connectDB();
+                PreparedStatement checkStmt = conn.prepareStatement(checkSQL)) {
 
-    } catch (SQLException e) {
-        System.out.println(" Error deleting item: " + e.getMessage());
+            checkStmt.setInt(1, itemId);
+            checkStmt.setInt(2, traderId);
+            ResultSet rs = checkStmt.executeQuery();
+
+            if (!rs.next()) {
+                System.out.println(" No item found with that ID or it doesn’t belong to you.");
+                return;
+            }
+
+            System.out.println("\nItem details to be deleted:");
+            System.out.println("-------------------------------------------");
+            System.out.println("Item Name    : " + rs.getString("item_Name"));
+            System.out.println("Brand        : " + rs.getString("item_Brand"));
+            System.out.println("Condition    : " + rs.getString("item_Condition"));
+            System.out.println("Date Bought  : " + rs.getString("item_Date"));
+            System.out.println("Description  : " + rs.getString("item_Description"));
+            System.out.println("-------------------------------------------");
+
+            System.out.print("Are you sure you want to delete this item? (yes/no): ");
+            String confirm = scan.nextLine().trim().toLowerCase();
+
+            if (!confirm.equals("yes")) {
+                System.out.println(" Deletion cancelled.");
+                return;
+            }
+
+            String sqlDelete = "DELETE FROM tbl_items WHERE items_id = ? AND trader_id = ?";
+            con.deleteRecord(sqlDelete, itemId, traderId);
+
+            System.out.println(" Item deleted successfully!");
+
+        } catch (SQLException e) {
+            System.out.println(" Error deleting item: " + e.getMessage());
+        }
     }
-}
 
-
-    // ----------------------------------------------------
-    // 5. VIEW OTHER TRADERS' ITEMS (FULL DETAILS)
-    // ----------------------------------------------------
+// ----------------------------------------------------
+// 5. VIEW OTHER TRADERS ITEMS 
+// ----------------------------------------------------
     public void viewOtherItems() {
-        System.out.println("\n--- OTHER TRADERS' ITEMS ---");
+        System.out.println("\n--- VIEW OTHER TRADERS' ITEMS ---");
+        System.out.println(" You are logged in as Trader ID: " + traderId);
+        System.out.println(" Note: Your own items are not shown here.\n");
 
         String query = "SELECT i.items_id, i.item_Name, i.item_Brand, i.item_Condition, "
                 + "i.item_Date, i.item_Description, "
                 + "t.tbl_FullName AS trader_name, t.tbl_Location, t.tbl_Contact "
                 + "FROM tbl_items i "
                 + "JOIN tbl_trader t ON i.trader_id = t.trader_id "
-                + "WHERE i.trader_id != ?";
+                + "WHERE i.trader_id != ? "
+                + "ORDER BY t.tbl_FullName ASC";
 
         try (Connection conn = config.connectDB();
                 PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -321,13 +323,16 @@ public void DeleteMyItem(Scanner scan) {
             pstmt.setInt(1, traderId);
             ResultSet rs = pstmt.executeQuery();
 
+            boolean hasRecords = false;
+
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------");
-            System.out.printf("| %-5s | %-15s | %-10s | %-10s | %-12s | %-20s | %-15s | %-15s | %-15s |\n",
-                    "ID", "Item Name", "Brand", "Condition", "Date", "Description", "Trader", "Location", "Contact");
+            System.out.printf("| %-5s | %-15s | %-12s | %-12s | %-15s | %-25s | %-15s | %-15s | %-15s |\n",
+                    "ID", "Item Name", "Brand", "Condition", "Date Bought", "Description", "Trader Name", "Location", "Contact");
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------");
 
             while (rs.next()) {
-                System.out.printf("| %-5d | %-15s | %-10s | %-10s | %-12s | %-20s | %-15s | %-15s | %-15s |\n",
+                hasRecords = true;
+                System.out.printf("| %-5d | %-15s | %-12s | %-12s | %-15s | %-25s | %-15s | %-15s | %-15s |\n",
                         rs.getInt("items_id"),
                         rs.getString("item_Name"),
                         rs.getString("item_Brand"),
@@ -338,83 +343,132 @@ public void DeleteMyItem(Scanner scan) {
                         rs.getString("tbl_Location"),
                         rs.getString("tbl_Contact"));
             }
+
+            if (!hasRecords) {
+                System.out.println(" No items found from other traders at the moment.");
+            }
+
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------");
 
+            if (hasRecords) {
+                System.out.println(" Tip: You can use Option 6 (Request Trade) to make an offer on one of these items.");
+            }
+
         } catch (SQLException e) {
-            System.out.println("⚠ Error retrieving other traders' items: " + e.getMessage());
+            System.out.println(" Error retrieving other traders' items: " + e.getMessage());
         }
     }
 
 // ----------------------------------------------------
-// 6. REQUEST TRADE
+// 6. REQUEST TRADE 
 // ----------------------------------------------------
     public void requestTrade(Scanner scan) {
         System.out.println("\n--- REQUEST TRADE ---");
+        System.out.println(" You can browse other traders' items below:");
 
         viewOtherItems();
 
-        System.out.print("\nEnter the Item ID you want to trade for: ");
-        int targetItemId = scan.nextInt();
-        scan.nextLine();
+        int targetItemId = -1;
+        while (true) {
+            System.out.print("\nEnter the Item ID you want to trade for (or 0 to cancel): ");
+            while (!scan.hasNextInt()) {
+                System.out.print(" Invalid input. Please enter a numeric ID: ");
+                scan.next();
+            }
+            targetItemId = scan.nextInt();
+            scan.nextLine();
 
-        String getTraderSQL = "SELECT trader_id, item_Name FROM tbl_items WHERE items_id = ?";
-        int targetTraderId = -1;
-        String targetItemName = "";
-
-        try (Connection conn = config.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(getTraderSQL)) {
-
-            pstmt.setInt(1, targetItemId);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                targetTraderId = rs.getInt("trader_id");
-                targetItemName = rs.getString("item_Name");
-            } else {
-                System.out.println(" No item found with that ID.");
+            if (targetItemId == 0) {
+                System.out.println("Trade request cancelled.");
                 return;
             }
 
-        } catch (SQLException e) {
-            System.out.println("⚠ Error retrieving item owner: " + e.getMessage());
-            return;
+            String getTraderSQL = "SELECT trader_id, item_Name FROM tbl_items WHERE items_id = ?";
+            try (Connection conn = config.connectDB();
+                    PreparedStatement pstmt = conn.prepareStatement(getTraderSQL)) {
+
+                pstmt.setInt(1, targetItemId);
+                ResultSet rs = pstmt.executeQuery();
+
+                if (!rs.next()) {
+                    System.out.println(" No item found with that ID. Please try again.");
+                    continue;
+                }
+
+                int targetTraderId = rs.getInt("trader_id");
+                String targetItemName = rs.getString("item_Name");
+
+                if (targetTraderId == traderId) {
+                    System.out.println(" You cannot trade for your own item. Choose another item.");
+                    continue;
+                }
+
+                System.out.println("\nSelect one of your own items to offer in trade:");
+                ViewMyItems();
+
+                System.out.print("Enter your Item ID to offer (or 0 to cancel): ");
+                int myItemId = scan.nextInt();
+                scan.nextLine();
+
+                if (myItemId == 0) {
+                    System.out.println(" Trade cancelled.");
+                    return;
+                }
+
+                String checkOwnerSQL = "SELECT item_Name FROM tbl_items WHERE items_id = ? AND trader_id = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(checkOwnerSQL)) {
+                    checkStmt.setInt(1, myItemId);
+                    checkStmt.setInt(2, traderId);
+                    ResultSet checkRS = checkStmt.executeQuery();
+
+                    if (!checkRS.next()) {
+                        System.out.println(" You can only offer your own items. Try again.");
+                        continue;
+                    }
+
+                    String myItemName = checkRS.getString("item_Name");
+
+                    System.out.println("\n Trade Confirmation:");
+                    System.out.println("You are offering your item: " + myItemName + " (ID: " + myItemId + ")");
+                    System.out.println("For item: " + targetItemName + " (ID: " + targetItemId + ")");
+                    System.out.print("Proceed with trade? (yes/no): ");
+                    String confirm = scan.nextLine().trim().toLowerCase();
+
+                    if (!confirm.equals("yes")) {
+                        System.out.println(" Trade request cancelled.");
+                        return;
+                    }
+
+                    String insertTradeSQL = "INSERT INTO tbl_trade (offer_trader_id, target_trader_id, offer_item_id, target_item_id, trade_status, trade_DateRequest) "
+                            + "VALUES (?, ?, ?, ?, ?, datetime('now'))";
+
+                    int result = con.addRecordAndReturnId(insertTradeSQL, traderId, targetTraderId, myItemId, targetItemId, "pending");
+
+                    if (result > 0) {
+                        System.out.println(" Trade request sent successfully!");
+                    } else {
+                        System.out.println(" Failed to send trade request. Please try again.");
+                    }
+
+                    return; 
+
+                } catch (SQLException e) {
+                    System.out.println(" Error verifying item ownership: " + e.getMessage());
+                }
+
+            } catch (SQLException e) {
+                System.out.println(" Error retrieving item details: " + e.getMessage());
+            }
         }
-
-        if (targetTraderId == traderId) {
-            System.out.println(" You cannot trade with yourself.");
-            return;
-        }
-
-        System.out.println("\nSelect one of your own items to offer in trade:");
-        ViewMyItems();
-        System.out.print("Enter your Item ID to offer: ");
-        int myItemId = scan.nextInt();
-        scan.nextLine();
-
-        System.out.println("\nConfirm Trade Request:");
-        System.out.println("You are offering your Item ID: " + myItemId
-                + " for Item ID: " + targetItemId + " (" + targetItemName + ")");
-        System.out.print("Proceed with trade? (yes/no): ");
-        String confirm = scan.nextLine().trim().toLowerCase();
-
-        if (!confirm.equals("yes")) {
-            System.out.println("❌ Trade request cancelled.");
-            return;
-        }
-
-        String insertTradeSQL = "INSERT INTO tbl_trade (offer_trader_id, target_trader_id, offer_item_id, target_item_id, trade_status, trade_DateRequest) "
-                + "VALUES (?, ?, ?, ?, ?, datetime('now'))";
-
-        con.addRecord(insertTradeSQL, traderId, targetTraderId, myItemId, targetItemId, "pending");
-        System.out.println("✅ Trade request sent successfully!");
     }
 
 // ----------------------------------------------------
 // 7. VIEW TRADE REQUESTS 
 // ----------------------------------------------------
-    public void viewTradeRequests(Scanner scan) {
+public void viewTradeRequests(Scanner scan) {
+    while (true) {
         System.out.println("\n--- VIEW TRADE REQUESTS ---");
-        System.out.println("🧩 Logged in Trader ID: " + traderId);
+        System.out.println(" Logged in Trader ID: " + traderId);
 
         String query = "SELECT tr.trade_id, "
                 + "ot.tbl_FullName AS offer_trader, "
@@ -435,9 +489,8 @@ public void DeleteMyItem(Scanner scan) {
                 + "ORDER BY tr.trade_DateRequest DESC";
 
         try (Connection conn = config.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(query)) {
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            // traderId is used 4 times
             pstmt.setInt(1, traderId);
             pstmt.setInt(2, traderId);
             pstmt.setInt(3, traderId);
@@ -464,20 +517,29 @@ public void DeleteMyItem(Scanner scan) {
             }
 
             if (!hasRecords) {
-                System.out.println("⚠ No trade requests found (incoming or outgoing).");
+                System.out.println(" No trade requests found (incoming or outgoing).");
             }
 
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------");
 
         } catch (SQLException e) {
-            System.out.println("⚠ Error retrieving trade requests: " + e.getMessage());
+            System.out.println(" Error retrieving trade requests: " + e.getMessage());
+        }
+
+        System.out.print("\nDo you want to view again? (yes/no): ");
+        String again = scan.nextLine().trim().toLowerCase();
+        if (!again.equals("yes")) {
+            break; 
         }
     }
+}
 
-    // ----------------------------------------------------
+
+// ----------------------------------------------------
 // 8. RESPOND TO TRADE 
 // ----------------------------------------------------
-    public void respondTrade(Scanner scan) {
+public void respondTrade(Scanner scan) {
+    while (true) {
         System.out.println("\n--- RESPOND TO TRADE REQUESTS ---");
 
         String query = "SELECT tr.trade_id, ot.tbl_FullName AS offer_trader, "
@@ -490,7 +552,7 @@ public void DeleteMyItem(Scanner scan) {
                 + "WHERE tr.target_trader_id = ? AND tr.trade_status = 'pending'";
 
         try (Connection conn = config.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(query)) {
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, traderId);
             ResultSet rs = pstmt.executeQuery();
@@ -513,49 +575,70 @@ public void DeleteMyItem(Scanner scan) {
             }
 
             if (!hasPending) {
-                System.out.println("⚠ No pending trade requests to respond to.");
-                return;
+                System.out.println(" No pending trade requests to respond to.");
+                break;
             }
 
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------");
-            System.out.print("Enter Trade ID to respond: ");
+            System.out.print("Enter Trade ID to respond (or 0 to cancel): ");
             int tradeId = scan.nextInt();
             scan.nextLine();
+
+            if (tradeId == 0) {
+                System.out.println("Action cancelled.");
+                break;
+            }
+
+            String checkSQL = "SELECT trade_id FROM tbl_trade WHERE trade_id = ? AND target_trader_id = ? AND trade_status = 'pending'";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkSQL)) {
+                checkStmt.setInt(1, tradeId);
+                checkStmt.setInt(2, traderId);
+                ResultSet validTrade = checkStmt.executeQuery();
+                if (!validTrade.next()) {
+                    System.out.println(" Invalid Trade ID or not your trade request.");
+                    continue;
+                }
+            }
 
             System.out.println("\nChoose response:");
             System.out.println("1. Accept Trade");
             System.out.println("2. Decline Trade");
             System.out.println("3. Send Message to Trader");
             System.out.println("4. Confirm Item Received");
-            System.out.println("5. Cancel");
+            System.out.println("5. Back");
             System.out.print("Enter choice: ");
             int choice = scan.nextInt();
             scan.nextLine();
 
-            String newStatus = "";
-
             switch (choice) {
-                case 1: // Accept
-                    newStatus = "accepted";
-                    String updateSQL = "UPDATE tbl_trade SET trade_status = ? WHERE trade_id = ?";
-                    con.updateRecord(updateSQL, newStatus, tradeId);
-
-                    // Move trade to history
-                    moveTradeToHistory(conn, tradeId);
-                    System.out.println("✅ Trade accepted and moved to history!");
+                case 1: 
+                    System.out.print("Are you sure you want to accept this trade? (yes/no): ");
+                    String confirmAccept = scan.nextLine().trim().toLowerCase();
+                    if (confirmAccept.equals("yes")) {
+                        String updateSQL = "UPDATE tbl_trade SET trade_status = 'accepted' WHERE trade_id = ?";
+                        con.updateRecord(updateSQL, tradeId);
+                        moveTradeToHistory(conn, tradeId);
+                        System.out.println(" Trade accepted and moved to history!");
+                    } else {
+                        System.out.println(" Trade acceptance cancelled.");
+                    }
                     break;
 
-                case 2: // Decline
-                    newStatus = "declined";
-                    con.updateRecord("UPDATE tbl_trade SET trade_status = ? WHERE trade_id = ?", newStatus, tradeId);
-                    System.out.println("❌ Trade declined.");
+                case 2: 
+                    System.out.print("Are you sure you want to decline this trade? (yes/no): ");
+                    String confirmDecline = scan.nextLine().trim().toLowerCase();
+                    if (confirmDecline.equals("yes")) {
+                        con.updateRecord("UPDATE tbl_trade SET trade_status = 'declined' WHERE trade_id = ?", tradeId);
+                        System.out.println(" Trade declined.");
+                    } else {
+                        System.out.println(" Decline cancelled.");
+                    }
                     break;
 
-                case 3: // Send Message
-                    System.out.print("Enter message: ");
+                case 3: 
+                    System.out.print("Enter your message: ");
                     String message = scan.nextLine();
 
-                    // Get trade info to find receiver
                     String getTradeSQL = "SELECT offer_trader_id, target_trader_id FROM tbl_trade WHERE trade_id = ?";
                     try (PreparedStatement getTrade = conn.prepareStatement(getTradeSQL)) {
                         getTrade.setInt(1, tradeId);
@@ -568,29 +651,28 @@ public void DeleteMyItem(Scanner scan) {
 
                             String insertMsg = "INSERT INTO tbl_trade_messages (trade_id, sender_id, receiver_id, message_text) VALUES (?, ?, ?, ?)";
                             con.addRecord(insertMsg, tradeId, sender, receiver, message);
-                            System.out.println("💬 Message sent successfully!");
+                            System.out.println(" Message sent successfully!");
                         }
                     }
                     break;
 
-                case 4: // Confirm received
-                    String confirmSQL;
+                case 4: 
                     System.out.print("Confirm item received? (yes/no): ");
                     String confirm = scan.nextLine().trim().toLowerCase();
                     if (confirm.equals("yes")) {
-                        // Determine if this trader is offerer or receiver
                         String checkTrade = "SELECT offer_trader_id, target_trader_id FROM tbl_trade WHERE trade_id = ?";
                         try (PreparedStatement checkStmt = conn.prepareStatement(checkTrade)) {
                             checkStmt.setInt(1, tradeId);
                             ResultSet data = checkStmt.executeQuery();
                             if (data.next()) {
+                                String confirmSQL;
                                 if (data.getInt("offer_trader_id") == traderId) {
                                     confirmSQL = "UPDATE tbl_trade SET offer_received = 1 WHERE trade_id = ?";
                                 } else {
                                     confirmSQL = "UPDATE tbl_trade SET target_received = 1 WHERE trade_id = ?";
                                 }
                                 con.updateRecord(confirmSQL, tradeId);
-                                System.out.println("📦 Item marked as received.");
+                                System.out.println(" Item marked as received!");
                             }
                         }
                     } else {
@@ -599,20 +681,27 @@ public void DeleteMyItem(Scanner scan) {
                     break;
 
                 case 5:
-                    System.out.println("Action cancelled.");
+                    System.out.println("Returning to menu...");
                     return;
 
                 default:
-                    System.out.println("Invalid option.");
-                    return;
+                    System.out.println(" Invalid choice. Try again.");
+                    break;
+            }
+
+            System.out.print("\nDo you want to respond to another trade? (yes/no): ");
+            String again = scan.nextLine().trim().toLowerCase();
+            if (!again.equals("yes")) {
+                break;
             }
 
         } catch (SQLException e) {
-            System.out.println("⚠ Error responding to trade: " + e.getMessage());
+            System.out.println(" Error responding to trade: " + e.getMessage());
         }
     }
+}
 
-// Move accepted trades to history
+
     private void moveTradeToHistory(Connection conn, int tradeId) throws SQLException {
         String selectTrade = "SELECT * FROM tbl_trade WHERE trade_id = ?";
         try (PreparedStatement getTrade = conn.prepareStatement(selectTrade)) {
@@ -636,218 +725,342 @@ public void DeleteMyItem(Scanner scan) {
         }
     }
 
-    // ----------------------------------------------------
+// ----------------------------------------------------
 // 9. VIEW TRADE HISTORY
 // ----------------------------------------------------
-    public void viewTradeHistory() {
-        System.out.println("\n--- TRADE HISTORY ---");
+public void viewTradeHistory() {
+    System.out.println("\n--- TRADE HISTORY ---");
 
-        String query = "SELECT h.history_id, "
-                + "ot.tbl_FullName AS offer_trader, "
-                + "tt.tbl_FullName AS target_trader, "
-                + "oi.item_Name AS offer_item, "
-                + "ti.item_Name AS target_item, "
-                + "h.trade_status, h.trade_DateCompleted "
-                + "FROM tbl_trade_history h "
-                + "JOIN tbl_trader ot ON h.offer_trader_id = ot.trader_id "
-                + "JOIN tbl_trader tt ON h.target_trader_id = tt.trader_id "
-                + "LEFT JOIN tbl_items oi ON h.offer_item_id = oi.items_id "
-                + "LEFT JOIN tbl_items ti ON h.target_item_id = ti.items_id "
-                + "WHERE h.offer_trader_id = ? OR h.target_trader_id = ? "
-                + "ORDER BY h.trade_DateCompleted DESC";
+    String query = "SELECT h.history_id, "
+            + "ot.tbl_FullName AS offer_trader, "
+            + "tt.tbl_FullName AS target_trader, "
+            + "oi.item_Name AS offer_item, "
+            + "ti.item_Name AS target_item, "
+            + "h.trade_status, h.trade_DateCompleted "
+            + "FROM tbl_trade_history h "
+            + "JOIN tbl_trader ot ON h.offer_trader_id = ot.trader_id "
+            + "JOIN tbl_trader tt ON h.target_trader_id = tt.trader_id "
+            + "LEFT JOIN tbl_items oi ON h.offer_item_id = oi.items_id "
+            + "LEFT JOIN tbl_items ti ON h.target_item_id = ti.items_id "
+            + "WHERE h.offer_trader_id = ? OR h.target_trader_id = ? "
+            + "ORDER BY h.trade_DateCompleted DESC";
 
-        try (Connection conn = config.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(query)) {
+    try (Connection conn = config.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setInt(1, traderId);
-            pstmt.setInt(2, traderId);
-            ResultSet rs = pstmt.executeQuery();
+        pstmt.setInt(1, traderId);
+        pstmt.setInt(2, traderId);
+        ResultSet rs = pstmt.executeQuery();
 
-            System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
-            System.out.printf("| %-5s | %-15s | %-15s | %-20s | %-20s | %-10s | %-20s |\n",
-                    "ID", "Offer By", "Trade With", "Offered Item", "Target Item", "Status", "Date Completed");
-            System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-5s | %-18s | %-18s | %-20s | %-20s | %-12s | %-20s |\n",
+                "ID", "Offered By", "Traded With", "Offered Item", "Target Item", "Status", "Date Completed");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
 
-            boolean hasRecords = false;
-            while (rs.next()) {
-                hasRecords = true;
-                System.out.printf("| %-5d | %-15s | %-15s | %-20s | %-20s | %-10s | %-20s |\n",
-                        rs.getInt("history_id"),
-                        rs.getString("offer_trader"),
-                        rs.getString("target_trader"),
-                        rs.getString("offer_item"),
-                        rs.getString("target_item"),
-                        rs.getString("trade_status"),
-                        rs.getString("trade_DateCompleted"));
-            }
+        boolean hasRecords = false;
+        while (rs.next()) {
+            hasRecords = true;
 
-            if (!hasRecords) {
-                System.out.println("⚠ No trade history found.");
-            }
+            String offerItem = rs.getString("offer_item") != null ? rs.getString("offer_item") : "[Deleted Item]";
+            String targetItem = rs.getString("target_item") != null ? rs.getString("target_item") : "[Deleted Item]";
+            String dateCompleted = rs.getString("trade_DateCompleted") != null ? rs.getString("trade_DateCompleted") : "N/A";
 
-            System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
-
-        } catch (SQLException e) {
-            System.out.println("⚠ Error retrieving trade history: " + e.getMessage());
+            System.out.printf("| %-5d | %-18s | %-18s | %-20s | %-20s | %-12s | %-20s |\n",
+                    rs.getInt("history_id"),
+                    rs.getString("offer_trader"),
+                    rs.getString("target_trader"),
+                    offerItem,
+                    targetItem,
+                    rs.getString("trade_status"),
+                    dateCompleted);
         }
+
+        if (!hasRecords) {
+            System.out.println(" No trade history found. You haven’t completed any trades yet.");
+        }
+
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+
+    } catch (SQLException e) {
+        System.out.println(" Error retrieving trade history: " + e.getMessage());
     }
+}
 
-    // ----------------------------------------------------
-// 10. SEND UNIVERSAL MESSAGE 
 // ----------------------------------------------------
-    public void sendMessage(Scanner scan) {
-        System.out.println("\n--- SEND MESSAGE TO ANOTHER TRADER ---");
+// 10. SEND MESSAGE 
+// ----------------------------------------------------
+public void sendMessage(Scanner scan) {
+    System.out.println("\n--- SEND MESSAGE TO ANOTHER TRADER ---");
 
-        String listTraders = "SELECT trader_id, tbl_FullName, tbl_Location, tbl_Contact "
-                + "FROM tbl_trader WHERE trader_id != ?";
-        try (Connection conn = config.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(listTraders)) {
+    String listTraders = "SELECT trader_id, tbl_FullName, tbl_Location, tbl_Contact "
+            + "FROM tbl_trader WHERE trader_id != ?";
 
-            pstmt.setInt(1, traderId);
-            ResultSet rs = pstmt.executeQuery();
+    try (Connection conn = config.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(listTraders)) {
 
-            System.out.println("-------------------------------------------------------------");
-            System.out.printf("| %-5s | %-20s | %-15s | %-15s |\n",
-                    "ID", "Name", "Location", "Contact");
-            System.out.println("-------------------------------------------------------------");
+        pstmt.setInt(1, traderId);
+        ResultSet rs = pstmt.executeQuery();
 
-            while (rs.next()) {
-                System.out.printf("| %-5d | %-20s | %-15s | %-15s |\n",
-                        rs.getInt("trader_id"),
-                        rs.getString("tbl_FullName"),
-                        rs.getString("tbl_Location"),
-                        rs.getString("tbl_Contact"));
-            }
-            System.out.println("-------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------------");
+        System.out.printf("| %-5s | %-25s | %-20s | %-15s |\n",
+                "ID", "Trader Name", "Location", "Contact");
+        System.out.println("--------------------------------------------------------------------------------------");
 
+        boolean hasTraders = false;
+        while (rs.next()) {
+            hasTraders = true;
+            System.out.printf("| %-5d | %-25s | %-20s | %-15s |\n",
+                    rs.getInt("trader_id"),
+                    rs.getString("tbl_FullName"),
+                    rs.getString("tbl_Location"),
+                    rs.getString("tbl_Contact"));
+        }
+
+        if (!hasTraders) {
+            System.out.println(" No other traders available to message at the moment.");
+            System.out.println("--------------------------------------------------------------------------------------");
+            return;
+        }
+
+        System.out.println("--------------------------------------------------------------------------------------");
+
+        int receiverId = -1;
+        while (true) {
             System.out.print("Enter Trader ID to message: ");
-            int receiverId = scan.nextInt();
+            if (!scan.hasNextInt()) {
+                System.out.println(" Invalid input. Please enter a numeric ID.");
+                scan.nextLine();
+                continue;
+            }
+            receiverId = scan.nextInt();
             scan.nextLine();
 
-            System.out.print("Enter your message: ");
-            String message = scan.nextLine();
+            if (receiverId == traderId) {
+                System.out.println(" You cannot send a message to yourself!");
+                continue;
+            }
 
-            String sql = "INSERT INTO tbl_trade_messages (trade_id, sender_id, receiver_id, message_text) "
-                    + "VALUES (NULL, ?, ?, ?)";
-            con.addRecord(sql, traderId, receiverId, message);
-
-            System.out.println("💬 Message sent successfully!");
-
-        } catch (SQLException e) {
-            System.out.println("⚠ Error sending message: " + e.getMessage());
+            String checkTraderSQL = "SELECT COUNT(*) AS count FROM tbl_trader WHERE trader_id = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkTraderSQL)) {
+                checkStmt.setInt(1, receiverId);
+                ResultSet checkRS = checkStmt.executeQuery();
+                if (checkRS.next() && checkRS.getInt("count") > 0) {
+                    break; 
+                } else {
+                    System.out.println(" No trader found with that ID. Try again.");
+                }
+            }
         }
-    }
 
-    // ----------------------------------------------------
+        System.out.print("Enter your message: ");
+        String message = scan.nextLine().trim();
+
+        if (message.isEmpty()) {
+            System.out.println(" Message cannot be empty. Operation cancelled.");
+            return;
+        }
+
+        System.out.print("Send this message? (yes/no): ");
+        String confirm = scan.nextLine().trim().toLowerCase();
+
+        if (!confirm.equals("yes")) {
+            System.out.println(" Message cancelled.");
+            return;
+        }
+
+        String sql = "INSERT INTO tbl_trade_messages (trade_id, sender_id, receiver_id, message_text, message_date) "
+                   + "VALUES (NULL, ?, ?, ?, datetime('now'))";
+
+        try {
+            con.addRecord(sql, traderId, receiverId, message);
+            System.out.println(" Message sent successfully!");
+        } catch (Exception e) {
+            System.out.println(" Failed to send message: " + e.getMessage());
+        }
+
+    } catch (SQLException e) {
+        System.out.println("⚠ Error sending message: " + e.getMessage());
+    }
+}
+
+// ----------------------------------------------------
 // 11. VIEW & REPLY TO MESSAGES
 // ----------------------------------------------------
-    public void viewAllMessages(Scanner scan) {
-        System.out.println("\n--- VIEW MESSAGES ---");
+public void viewAllMessages(Scanner scan) {
+    System.out.println("\n--- VIEW MESSAGES ---");
 
-        String listTraders = "SELECT DISTINCT "
-                + "CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END AS chat_partner_id, "
-                + "t.tbl_FullName "
-                + "FROM tbl_trade_messages m "
-                + "JOIN tbl_trader t ON t.trader_id = CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END "
-                + "WHERE sender_id = ? OR receiver_id = ?";
+    String listTraders = "SELECT DISTINCT "
+            + "CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END AS chat_partner_id, "
+            + "t.tbl_FullName "
+            + "FROM tbl_trade_messages m "
+            + "JOIN tbl_trader t ON t.trader_id = CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END "
+            + "WHERE sender_id = ? OR receiver_id = ?";
 
-        try (Connection conn = config.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(listTraders)) {
+    try (Connection conn = config.connectDB();
+         PreparedStatement pstmt = conn.prepareStatement(listTraders)) {
 
-            pstmt.setInt(1, traderId);
-            pstmt.setInt(2, traderId);
-            pstmt.setInt(3, traderId);
-            pstmt.setInt(4, traderId);
-            ResultSet rs = pstmt.executeQuery();
+        pstmt.setInt(1, traderId);
+        pstmt.setInt(2, traderId);
+        pstmt.setInt(3, traderId);
+        pstmt.setInt(4, traderId);
+        ResultSet rs = pstmt.executeQuery();
 
-            System.out.println("-------------------------------------------------------------");
-            System.out.printf("| %-5s | %-25s |\n", "ID", "Chat Partner");
-            System.out.println("-------------------------------------------------------------");
+        System.out.println("-------------------------------------------------------------");
+        System.out.printf("| %-5s | %-25s |\n", "ID", "Chat Partner");
+        System.out.println("-------------------------------------------------------------");
 
-            boolean hasChats = false;
-            while (rs.next()) {
-                hasChats = true;
-                System.out.printf("| %-5d | %-25s |\n",
-                        rs.getInt("chat_partner_id"),
-                        rs.getString("tbl_FullName"));
-            }
-
-            if (!hasChats) {
-                System.out.println("⚠ No messages yet.");
-                return;
-            }
-
-            System.out.println("-------------------------------------------------------------");
-            System.out.print("Enter Trader ID to open chat: ");
-            int partnerId = scan.nextInt();
-            scan.nextLine();
-
-            // Show chat history with selected partner
-            showChatHistory(scan, conn, partnerId);
-
-        } catch (SQLException e) {
-            System.out.println("⚠ Error viewing messages: " + e.getMessage());
+        boolean hasChats = false;
+        while (rs.next()) {
+            hasChats = true;
+            System.out.printf("| %-5d | %-25s |\n",
+                    rs.getInt("chat_partner_id"),
+                    rs.getString("tbl_FullName"));
         }
 
+        if (!hasChats) {
+            System.out.println(" No messages yet. Start chatting using 'Message Another Trader' first.");
+            return;
+        }
+
+        System.out.println("-------------------------------------------------------------");
+        int partnerId = -1;
+        while (true) {
+            System.out.print("Enter Trader ID to open chat: ");
+            if (!scan.hasNextInt()) {
+                System.out.println(" Invalid input. Please enter a valid numeric ID.");
+                scan.nextLine();
+                continue;
+            }
+            partnerId = scan.nextInt();
+            scan.nextLine();
+
+            String checkChatSQL = "SELECT COUNT(*) AS cnt FROM tbl_trade_messages "
+                                + "WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkChatSQL)) {
+                checkStmt.setInt(1, traderId);
+                checkStmt.setInt(2, partnerId);
+                checkStmt.setInt(3, partnerId);
+                checkStmt.setInt(4, traderId);
+                ResultSet checkRS = checkStmt.executeQuery();
+                if (checkRS.next() && checkRS.getInt("cnt") > 0) {
+                    break; 
+                } else {
+                    System.out.println(" No chat history found with that Trader ID. Try again.");
+                }
+            }
+        }
+
+        showChatHistory(scan, conn, partnerId);
+
+    } catch (SQLException e) {
+        System.out.println("⚠ Error viewing messages: " + e.getMessage());
     }
+}
+
 
 // ----------------------------------------------------
 // SHOW CHAT HISTORY & REPLY
 // ----------------------------------------------------
-    private void showChatHistory(Scanner scan, Connection conn, int partnerId) {
-        System.out.println("\n--- CHAT HISTORY ---");
+private void showChatHistory(Scanner scan, Connection conn, int partnerId) {
+    System.out.println("\n--- CHAT HISTORY ---");
 
-        String chatQuery = "SELECT m.message_text, m.message_date, "
-                + "s.tbl_FullName AS sender, r.tbl_FullName AS receiver "
-                + "FROM tbl_trade_messages m "
-                + "JOIN tbl_trader s ON m.sender_id = s.trader_id "
-                + "JOIN tbl_trader r ON m.receiver_id = r.trader_id "
-                + "WHERE (m.sender_id = ? AND m.receiver_id = ?) "
-                + "   OR (m.sender_id = ? AND m.receiver_id = ?) "
-                + "ORDER BY m.message_date ASC";
+    String chatQuery = "SELECT m.message_text, m.message_date, "
+            + "s.tbl_FullName AS sender, r.tbl_FullName AS receiver "
+            + "FROM tbl_trade_messages m "
+            + "JOIN tbl_trader s ON m.sender_id = s.trader_id "
+            + "JOIN tbl_trader r ON m.receiver_id = r.trader_id "
+            + "WHERE (m.sender_id = ? AND m.receiver_id = ?) "
+            + "   OR (m.sender_id = ? AND m.receiver_id = ?) "
+            + "ORDER BY m.message_date ASC";
 
-        try (PreparedStatement chatStmt = conn.prepareStatement(chatQuery)) {
-            chatStmt.setInt(1, traderId);
-            chatStmt.setInt(2, partnerId);
-            chatStmt.setInt(3, partnerId);
-            chatStmt.setInt(4, traderId);
-            ResultSet rs = chatStmt.executeQuery();
+    try (PreparedStatement chatStmt = conn.prepareStatement(chatQuery)) {
+        chatStmt.setInt(1, traderId);
+        chatStmt.setInt(2, partnerId);
+        chatStmt.setInt(3, partnerId);
+        chatStmt.setInt(4, traderId);
+        ResultSet rs = chatStmt.executeQuery();
 
-            System.out.println("---------------------------------------------------------------------------------------------");
-            System.out.printf("| %-15s | %-40s | %-20s |\n", "Sender", "Message", "Date");
-            System.out.println("---------------------------------------------------------------------------------------------");
+        System.out.println("---------------------------------------------------------------------------------------------");
+        System.out.printf("| %-15s | %-45s | %-20s |\n", "Sender", "Message", "Date");
+        System.out.println("---------------------------------------------------------------------------------------------");
 
-            boolean hasMsgs = false;
-            while (rs.next()) {
-                hasMsgs = true;
-                System.out.printf("| %-15s | %-40s | %-20s |\n",
-                        rs.getString("sender"),
-                        rs.getString("message_text"),
-                        rs.getString("message_date"));
+        boolean hasMsgs = false;
+        while (rs.next()) {
+            hasMsgs = true;
+            String sender = rs.getString("sender");
+            String msg = rs.getString("message_text");
+            String date = rs.getString("message_date");
+
+            if (sender.equalsIgnoreCase(getTraderName(conn, traderId))) {
+                System.out.printf("| %-15s | %-45s | %-20s |\n", " You", msg, date);
+            } else {
+                System.out.printf("| %-15s | %-45s | %-20s |\n", sender, msg, date);
             }
+        }
 
-            if (!hasMsgs) {
-                System.out.println("⚠ No chat history yet.");
-            }
+        if (!hasMsgs) {
+            System.out.println(" No chat messages found.");
+        }
 
-            System.out.println("---------------------------------------------------------------------------------------------");
-            System.out.print("Send a reply? (yes/no): ");
+        System.out.println("---------------------------------------------------------------------------------------------");
+
+        while (true) {
+            System.out.print("Reply to this chat? (yes/no): ");
             String reply = scan.nextLine().trim().toLowerCase();
 
-            if (reply.equals("yes")) {
+            if (reply.equals("no")) {
+                System.out.println(" Returning to message list...");
+                return;
+            } else if (reply.equals("yes")) {
                 System.out.print("Enter your message: ");
-                String msg = scan.nextLine();
+                String msg = scan.nextLine().trim();
 
-                String insertMsg = "INSERT INTO tbl_trade_messages (trade_id, sender_id, receiver_id, message_text) "
-                        + "VALUES (NULL, ?, ?, ?)";
-                con.addRecord(insertMsg, traderId, partnerId, msg);
-                System.out.println("💬 Message sent!");
+                if (msg.isEmpty()) {
+                    System.out.println(" Message cannot be empty.");
+                    continue;
+                }
+
+                String insertMsg = "INSERT INTO tbl_trade_messages (trade_id, sender_id, receiver_id, message_text, message_date) "
+                                 + "VALUES (NULL, ?, ?, ?, datetime('now'))";
+                try {
+                    con.addRecord(insertMsg, traderId, partnerId, msg);
+                    System.out.println("Message sent successfully!");
+                } catch (Exception e) {
+                    System.out.println(" Failed to send message: " + e.getMessage());
+                }
+
+                System.out.print("Send another message? (yes/no): ");
+                if (!scan.nextLine().trim().equalsIgnoreCase("yes")) {
+                    break;
+                }
+
+            } else {
+                System.out.println(" Invalid input. Please type 'yes' or 'no'.");
             }
+        }
 
-        } catch (SQLException e) {
-            System.out.println("⚠ Error showing chat history: " + e.getMessage());
+    } catch (SQLException e) {
+        System.out.println("⚠ Error showing chat history: " + e.getMessage());
+    }
+}
+
+
+// ----------------------------------------------------
+// HELPER: Get Trader Name by ID
+// ----------------------------------------------------
+private String getTraderName(Connection conn, int traderId) throws SQLException {
+    String name = "";
+    String sql = "SELECT tbl_FullName FROM tbl_trader WHERE trader_id = ?";
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setInt(1, traderId);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            name = rs.getString("tbl_FullName");
         }
     }
+    return name;
+}
+
 
     // ----------------------------------------------------
     // TRADER MENU
