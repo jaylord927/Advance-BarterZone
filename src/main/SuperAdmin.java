@@ -5,7 +5,6 @@ import java.sql.*;
 
 public class SuperAdmin {
 
-    // This method ensures that the default admin account exists
     public static void ensureDefaultAdmin(config con) {
         String checkSQL = "SELECT COUNT(*) FROM tbl_admin WHERE admin_username = 'admin'";
         String insertSQL = "INSERT INTO tbl_admin (admin_username, admin_password) VALUES ('admin', 'jaylord')";

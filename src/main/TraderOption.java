@@ -1136,3 +1136,6 @@ private String getTraderName(Connection conn, int traderId) throws SQLException 
         } while (choice != 12);
     }
 }
+
+//Report account
+//optional menu option -View all user
