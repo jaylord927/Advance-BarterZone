@@ -1,4 +1,4 @@
-package main;
+package Admin;
 
 import config.config;
 import java.sql.*;
