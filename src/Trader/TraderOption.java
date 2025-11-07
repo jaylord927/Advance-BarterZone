@@ -317,8 +317,8 @@ public class TraderOption {
         int itemChoice;
         do {
             System.out.println("\n--- MANAGE MY ITEMS ---");
-            System.out.println("1. View My Items");
-            System.out.println("2. Offer New Item");
+            System.out.println("1. Offer New Item");
+            System.out.println("2. View My Items");
             System.out.println("3. Update My Item");
             System.out.println("4. Delete My Item");
             System.out.println("5. Back to Trader Menu");
@@ -335,10 +335,10 @@ public class TraderOption {
 
             switch (itemChoice) {
                 case 1:
-                    ViewMyItems();
+                    offerItem(scan);
                     break;
                 case 2:
-                    offerItem(scan);
+                    ViewMyItems();
                     break;
                 case 3:
                     UpdateMyItem(scan);
@@ -357,7 +357,7 @@ public class TraderOption {
     }
 
 // ----------------------------------------------------
-// 5. VIEW OTHER TRADERS ITEMS 
+// . VIEW OTHER TRADERS ITEMS 
 // ----------------------------------------------------
     public void viewOtherItems() {
         System.out.println("\n--- VIEW OTHER TRADERS' ITEMS ---");
@@ -406,7 +406,7 @@ public class TraderOption {
             System.out.println("-----------------------------------------------------------------------------------------------------------------------------------");
 
             if (hasRecords) {
-                System.out.println(" Tip: You can use Option 6 (Request Trade) to make an offer on one of these items.");
+                System.out.println(" Tip: You can use Option 3 (Request Trade) to make an offer on one of these items.");
             }
 
         } catch (SQLException e) {
@@ -415,107 +415,149 @@ public class TraderOption {
     }
 
 // ----------------------------------------------------
-// 6. REQUEST TRADE 
+// 3. REQUEST TRADE 
 // ----------------------------------------------------
-    public void requestTrade(Scanner scan) {
-        System.out.println("\n--- REQUEST TRADE ---");
-        System.out.println(" You can browse other traders' items below:");
+public void requestTrade(Scanner scan) {
+    System.out.println("\n--- REQUEST TRADE ---");
+    System.out.println(" You can browse other traders' items below:");
 
-        viewOtherItems();
+    viewOtherItems();
 
-        int targetItemId = -1;
-        while (true) {
-            System.out.print("\nEnter the Item ID you want to trade for (or 0 to cancel): ");
-            while (!scan.hasNextInt()) {
-                System.out.print(" Invalid input. Please enter a numeric ID: ");
-                scan.next();
+    int targetItemId = -1;
+    while (true) {
+        System.out.print("\nEnter the Item ID you want to trade for (or 0 to cancel): ");
+        while (!scan.hasNextInt()) {
+            System.out.print(" Invalid input. Please enter a numeric ID: ");
+            scan.next();
+        }
+        targetItemId = scan.nextInt();
+        scan.nextLine();
+
+        if (targetItemId == 0) {
+            System.out.println("Trade request cancelled.");
+            return;
+        }
+
+        String getTraderSQL = "SELECT trader_id, item_Name FROM tbl_items WHERE items_id = ?";
+        try (Connection conn = config.connectDB();
+                PreparedStatement pstmt = conn.prepareStatement(getTraderSQL)) {
+
+            pstmt.setInt(1, targetItemId);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (!rs.next()) {
+                System.out.println(" No item found with that ID. Please try again.");
+                continue;
             }
-            targetItemId = scan.nextInt();
+
+            int targetTraderId = rs.getInt("trader_id");
+            String targetItemName = rs.getString("item_Name");
+
+            if (targetTraderId == traderId) {
+                System.out.println(" You cannot trade for your own item. Choose another item.");
+                continue;
+            }
+
+            String checkActiveTradeSQL = "SELECT COUNT(*) FROM tbl_trade " +
+                    "WHERE (offer_item_id = ? OR target_item_id = ?) " +
+                    "AND trade_status IN ('pending', 'negotiating', 'arrangements_confirmed')";
+            
+            try (PreparedStatement checkTradeStmt = conn.prepareStatement(checkActiveTradeSQL)) {
+                checkTradeStmt.setInt(1, targetItemId);
+                checkTradeStmt.setInt(2, targetItemId);
+                ResultSet tradeCheckRS = checkTradeStmt.executeQuery();
+                
+                if (tradeCheckRS.next() && tradeCheckRS.getInt(1) > 0) {
+                    System.out.println(" This item is already involved in an active trade. Please choose another item.");
+                    continue;
+                }
+            }
+
+            System.out.println("\nSelect one of your own items to offer in trade:");
+            ViewMyItems();
+
+            System.out.print("Enter your Item ID to offer (or 0 to cancel): ");
+            int myItemId = scan.nextInt();
             scan.nextLine();
 
-            if (targetItemId == 0) {
-                System.out.println("Trade request cancelled.");
+            if (myItemId == 0) {
+                System.out.println(" Trade cancelled.");
                 return;
             }
 
-            String getTraderSQL = "SELECT trader_id, item_Name FROM tbl_items WHERE items_id = ?";
-            try (Connection conn = config.connectDB();
-                    PreparedStatement pstmt = conn.prepareStatement(getTraderSQL)) {
+            String checkOwnerSQL = "SELECT item_Name FROM tbl_items WHERE items_id = ? AND trader_id = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkOwnerSQL)) {
+                checkStmt.setInt(1, myItemId);
+                checkStmt.setInt(2, traderId);
+                ResultSet checkRS = checkStmt.executeQuery();
 
-                pstmt.setInt(1, targetItemId);
-                ResultSet rs = pstmt.executeQuery();
-
-                if (!rs.next()) {
-                    System.out.println(" No item found with that ID. Please try again.");
+                if (!checkRS.next()) {
+                    System.out.println(" You can only offer your own items. Try again.");
                     continue;
                 }
 
-                int targetTraderId = rs.getInt("trader_id");
-                String targetItemName = rs.getString("item_Name");
+                String myItemName = checkRS.getString("item_Name");
 
-                if (targetTraderId == traderId) {
-                    System.out.println(" You cannot trade for your own item. Choose another item.");
-                    continue;
-                }
-
-                System.out.println("\nSelect one of your own items to offer in trade:");
-                ViewMyItems();
-
-                System.out.print("Enter your Item ID to offer (or 0 to cancel): ");
-                int myItemId = scan.nextInt();
-                scan.nextLine();
-
-                if (myItemId == 0) {
-                    System.out.println(" Trade cancelled.");
-                    return;
-                }
-
-                String checkOwnerSQL = "SELECT item_Name FROM tbl_items WHERE items_id = ? AND trader_id = ?";
-                try (PreparedStatement checkStmt = conn.prepareStatement(checkOwnerSQL)) {
-                    checkStmt.setInt(1, myItemId);
-                    checkStmt.setInt(2, traderId);
-                    ResultSet checkRS = checkStmt.executeQuery();
-
-                    if (!checkRS.next()) {
-                        System.out.println(" You can only offer your own items. Try again.");
+                String checkMyItemTradeSQL = "SELECT COUNT(*) FROM tbl_trade " +
+                        "WHERE (offer_item_id = ? OR target_item_id = ?) " +
+                        "AND trade_status IN ('pending', 'negotiating', 'arrangements_confirmed')";
+                
+                try (PreparedStatement checkMyTradeStmt = conn.prepareStatement(checkMyItemTradeSQL)) {
+                    checkMyTradeStmt.setInt(1, myItemId);
+                    checkMyTradeStmt.setInt(2, myItemId);
+                    ResultSet myTradeCheckRS = checkMyTradeStmt.executeQuery();
+                    
+                    if (myTradeCheckRS.next() && myTradeCheckRS.getInt(1) > 0) {
+                        System.out.println(" Your selected item is already involved in an active trade. Please choose another item to offer.");
                         continue;
                     }
-
-                    String myItemName = checkRS.getString("item_Name");
-
-                    System.out.println("\n Trade Confirmation:");
-                    System.out.println("You are offering your item: " + myItemName + " (ID: " + myItemId + ")");
-                    System.out.println("For item: " + targetItemName + " (ID: " + targetItemId + ")");
-                    System.out.print("Proceed with trade? (yes/no): ");
-                    String confirm = scan.nextLine().trim().toLowerCase();
-
-                    if (!confirm.equals("yes")) {
-                        System.out.println(" Trade request cancelled.");
-                        return;
-                    }
-
-                    String insertTradeSQL = "INSERT INTO tbl_trade (offer_trader_id, target_trader_id, offer_item_id, target_item_id, trade_status, trade_DateRequest) "
-                            + "VALUES (?, ?, ?, ?, ?, datetime('now'))";
-
-                    int result = con.addRecordAndReturnId(insertTradeSQL, traderId, targetTraderId, myItemId, targetItemId, "pending");
-
-                    if (result > 0) {
-                        System.out.println(" Trade request sent successfully!");
-                    } else {
-                        System.out.println(" Failed to send trade request. Please try again.");
-                    }
-
-                    return;
-
-                } catch (SQLException e) {
-                    System.out.println(" Error verifying item ownership: " + e.getMessage());
                 }
 
+                System.out.println("\n Trade Confirmation:");
+                System.out.println("You are offering your item: " + myItemName + " (ID: " + myItemId + ")");
+                System.out.println("For item: " + targetItemName + " (ID: " + targetItemId + ")");
+                System.out.print("Proceed with trade? (yes/no): ");
+                String confirm = scan.nextLine().trim().toLowerCase();
+
+                if (!confirm.equals("yes")) {
+                    System.out.println(" Trade request cancelled.");
+                    return;
+                }
+
+                String insertTradeSQL = "INSERT INTO tbl_trade (offer_trader_id, target_trader_id, offer_item_id, target_item_id, trade_status, trade_DateRequest) "
+                        + "VALUES (?, ?, ?, ?, ?, datetime('now'))";
+
+                int result = con.addRecordAndReturnId(insertTradeSQL, traderId, targetTraderId, myItemId, targetItemId, "pending");
+
+                if (result > 0) {
+                    System.out.println(" Trade request sent successfully!");
+                    
+                    sendTradeNotification(conn, targetTraderId, myItemName, targetItemName);
+                } else {
+                    System.out.println(" Failed to send trade request. Please try again.");
+                }
+
+                return;
+
             } catch (SQLException e) {
-                System.out.println(" Error retrieving item details: " + e.getMessage());
+                System.out.println(" Error verifying item ownership: " + e.getMessage());
             }
+
+        } catch (SQLException e) {
+            System.out.println(" Error retrieving item details: " + e.getMessage());
         }
     }
+}
+
+// ----------------------------------------------------
+// SEND TRADE NOTIFICATION
+// ----------------------------------------------------
+private void sendTradeNotification(Connection conn, int targetTraderId, String myItemName, String targetItemName) throws SQLException {
+    String message = "I want to trade my item '" + myItemName + "' for your item '" + targetItemName + "'. Please check your trade requests.";
+    String insertMsg = "INSERT INTO tbl_trade_messages (trade_id, sender_id, receiver_id, message_text, message_date) "
+            + "VALUES (NULL, ?, ?, ?, datetime('now'))";
+    con.addRecord(insertMsg, traderId, targetTraderId, message);
+}
 
 // ----------------------------------------------------
 // 7. VIEW TRADE REQUESTS 
@@ -590,7 +632,7 @@ public class TraderOption {
     }
 
 // ----------------------------------------------------
-// 5. MANAGE RESPOND (FIXED VERSION)
+// 5. MANAGE RESPOND    
 // ----------------------------------------------------
     public void manageRespond(Scanner scan) {
         while (true) {
@@ -895,7 +937,7 @@ public class TraderOption {
     }
 
 // ----------------------------------------------------
-// 10. SEND MESSAGE 
+// 7. SEND MESSAGE 
 // ----------------------------------------------------
     public void sendMessage(Scanner scan) {
         System.out.println("\n--- SEND MESSAGE TO ANOTHER TRADER ---");
@@ -992,7 +1034,7 @@ public class TraderOption {
     }
 
 // ----------------------------------------------------
-// 11. VIEW & REPLY TO MESSAGES
+// 8. VIEW & REPLY TO MESSAGES
 // ----------------------------------------------------
     public void viewAllMessages(Scanner scan) {
         System.out.println("\n--- VIEW MESSAGES ---");
@@ -1377,58 +1419,58 @@ public class TraderOption {
         }
     }
 
+        // ----------------------------------------------------
+    // 12. VIEW/EDIT PROFILE
     // ----------------------------------------------------
-// 12. VIEW/EDIT PROFILE
-// ----------------------------------------------------
-    public void viewEditProfile(Scanner scan) {
-        ViewProfile viewProfile = new ViewProfile(con, traderId);
+        public void viewEditProfile(Scanner scan) {
+            ViewProfile viewProfile = new ViewProfile(con, traderId);
 
-        int profileChoice;
-        do {
-            System.out.println("\n--- MY PROFILE ---");
+            int profileChoice;
+            do {
+                System.out.println("\n--- MY PROFILE ---");
 
-            System.out.println("\n1. Edit Profile Information");
-            System.out.println("2. Change Password");
-            System.out.println("3. View Trade Statistics");
-            System.out.println("4. View Report History");
-            System.out.println("5. View All Profile Information");
-            System.out.println("6. Back to Trader Menu");
-            System.out.print("Select option: ");
-
-            while (!scan.hasNextInt()) {
-                System.out.println("Invalid input. Please enter a number.");
-                scan.next();
+                System.out.println("\n1. Edit Profile Information");
+                System.out.println("2. Change Password");
+                System.out.println("3. View Trade Statistics");
+                System.out.println("4. View Report History");
+                System.out.println("5. View All Profile Information");
+                System.out.println("6. Back to Trader Menu");
                 System.out.print("Select option: ");
-            }
 
-            profileChoice = scan.nextInt();
-            scan.nextLine();
+                while (!scan.hasNextInt()) {
+                    System.out.println("Invalid input. Please enter a number.");
+                    scan.next();
+                    System.out.print("Select option: ");
+                }
 
-            switch (profileChoice) {
-                case 1:
-                    viewProfile.editProfileInfo(scan);
-                    break;
-                case 2:
-                    viewProfile.changePassword(scan);
-                    break;
-                case 3:
-                    viewProfile.displayTradeStatistics();
-                    break;
-                case 4:
-                    viewProfile.displayReportHistory();
-                    break;
-                case 5:
-                    viewProfile.displayAllInformation();
-                    break;
-                case 6:
-                    System.out.println("Returning to Trader Menu...");
-                    break;
-                default:
-                    System.out.println("Invalid option! Please choose 1-6.");
-            }
+                profileChoice = scan.nextInt();
+                scan.nextLine();
 
-        } while (profileChoice != 6);
-    }
+                switch (profileChoice) {
+                    case 1:
+                        viewProfile.editProfileInfo(scan);
+                        break;
+                    case 2:
+                        viewProfile.changePassword(scan);
+                        break;
+                    case 3:
+                        viewProfile.displayTradeStatistics();
+                        break;
+                    case 4:
+                        viewProfile.displayReportHistory();
+                        break;
+                    case 5:
+                        viewProfile.displayAllInformation();
+                        break;
+                    case 6:
+                        System.out.println("Returning to Trader Menu...");
+                        break;
+                    default:
+                        System.out.println("Invalid option! Please choose 1-6.");
+                }
+
+            } while (profileChoice != 6);
+        }
 
     // -----------------
 // TRADER MENU 

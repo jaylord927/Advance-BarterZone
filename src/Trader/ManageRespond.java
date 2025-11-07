@@ -216,13 +216,13 @@ public class ManageRespond {
 
         int arrangementChoice;
         do {
-            System.out.println("\n1. Propose Exchange Method");
-            System.out.println("2. Respond to Exchange Method Proposal");
-            System.out.println("3. Set Delivery Details");
-            System.out.println("4. Set Meetup Details");
-            System.out.println("5. Review Delivery/Meetup Details");
-            System.out.println("6. Confirm/Decline Arrangements");
-            System.out.println("7. Confirm Item Received");
+            System.out.println("\nStep 1. Propose Exchange Method");
+            System.out.println("Step 2. Respond to Exchange Method Proposal");
+            System.out.println("Step 3. Set Delivery Details");
+            System.out.println("Step 4. Set Meetup Details");
+            System.out.println("Step 5. Review Delivery/Meetup Details");
+            System.out.println("Step 6. Confirm/Decline Arrangements");
+            System.out.println("Step 7. Confirm Item Received");
             System.out.println("8. Back");
             System.out.print("Select option: ");
 

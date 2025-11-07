@@ -1,6 +1,7 @@
 package main;
 
 import Admin.AdminOption;
+import Admin.Announcement;
 import Admin.SuperAdmin;
 import Trader.TraderOption;
 import config.config;
@@ -17,12 +18,13 @@ public class main {
 
         int choice = 0;
 
-        while (choice != 4) {
+        while (choice != 5) {
             System.out.println("\nWELCOME TO BARTERZONE");
             System.out.println("1. Register as Trader");
             System.out.println("2. Login as Trader");
             System.out.println("3. Admin");
-            System.out.println("4. Exit");
+            System.out.println("4. View Announcements");
+            System.out.println("5. Exit");
             System.out.print("Select option: ");
 
             while (!scan.hasNextInt()) {
@@ -121,20 +123,29 @@ public class main {
 
                     if (!adminResult.isEmpty()) {
                         Map<String, Object> admin = adminResult.get(0);
+                        int adminId = (Integer) admin.get("admin_id");  
                         System.out.println(" Admin login successful! Welcome, " + adminUser);
+
+                        Announcement announcement = new Announcement(con);
+                        announcement.viewActiveAnnouncements();
+
                         AdminOption adminOption = new AdminOption(con);
-                        adminOption.AdminMenu(scan);
+                        adminOption.AdminMenu(scan, adminId);  
                     } else {
                         System.out.println(" Invalid admin credentials.");
                     }
                     break;
 
-                case 4:
+                case 4:  
+                    System.out.println("\n--- SYSTEM ANNOUNCEMENTS ---");
+                    Announcement announcement = new Announcement(con);
+                    announcement.viewActiveAnnouncements();
+                    break;
+                case 5:  
                     System.out.println("Exiting system... Goodbye!");
                     break;
-
                 default:
-                    System.out.println(" INVALID SELECTION. Please choose 1-4.");
+                    System.out.println(" INVALID SELECTION. Please choose 1-5.");  
             }
         }
         scan.close();

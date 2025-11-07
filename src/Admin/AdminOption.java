@@ -2,6 +2,8 @@ package Admin;
 
 import config.config;
 import java.sql.*;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class AdminOption {
@@ -23,23 +25,52 @@ public class AdminOption {
     }
 
     // ----------------------------------------------------
-    // UPDATE TRADER STATUS
-    // ----------------------------------------------------
+// UPDATE TRADER STATUS
+// ----------------------------------------------------
     public void updateTraderStatus(Scanner scan) {
         viewTraders();
-        System.out.print("Enter Trader ID to update status: ");
-        int traderId = scan.nextInt();
-        scan.nextLine();
 
-        System.out.print("Enter new status (pending / approved / declined): ");
-        String newStatus = scan.nextLine().trim().toLowerCase();
+        int traderId;
+        while (true) {
+            System.out.print("Enter Trader ID to update status (0 to cancel): ");
+            if (scan.hasNextInt()) {
+                traderId = scan.nextInt();
+                scan.nextLine();
 
-        if (!newStatus.equals("pending") && !newStatus.equals("approved") && !newStatus.equals("declined")) {
-            System.out.println(" Invalid status. Must be: pending / approved / declined.");
-            return;
+                if (traderId == 0) {
+                    System.out.println("Update cancelled.");
+                    return;
+                }
+
+                if (traderExists(traderId)) {
+                    break;
+                } else {
+                    System.out.println(" Trader ID " + traderId + " does not exist. Please try again.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a valid number.");
+                scan.nextLine();
+            }
         }
 
-        System.out.print("Are you sure you want to update this trader's status to '" + newStatus + "'? (yes/no): ");
+        String newStatus;
+        while (true) {
+            System.out.print("Enter new status (pending/approved/declined, or 0 to cancel): ");
+            newStatus = scan.nextLine().trim().toLowerCase();
+
+            if (newStatus.equals("0")) {
+                System.out.println("Update cancelled.");
+                return;
+            }
+
+            if (newStatus.equals("pending") || newStatus.equals("approved") || newStatus.equals("declined")) {
+                break;
+            } else {
+                System.out.println(" Invalid status. Must be: pending / approved / declined.");
+            }
+        }
+
+        System.out.print("Are you sure you want to update trader #" + traderId + " status to '" + newStatus + "'? (yes/no): ");
         String confirm = scan.nextLine().trim().toLowerCase();
 
         if (confirm.equals("yes")) {
@@ -51,16 +82,36 @@ public class AdminOption {
         }
     }
 
-    // ----------------------------------------------------
-    // DELETE TRADER
-    // ----------------------------------------------------
+// ----------------------------------------------------
+// DELETE TRADER
+// ----------------------------------------------------
     public void deleteTrader(Scanner scan) {
         viewTraders();
-        System.out.print("Enter Trader ID to delete: ");
-        int traderId = scan.nextInt();
-        scan.nextLine();
 
-        System.out.print("Are you sure you want to DELETE this trader account? (yes/no): ");
+        int traderId;
+        while (true) {
+            System.out.print("Enter Trader ID to delete (0 to cancel): ");
+            if (scan.hasNextInt()) {
+                traderId = scan.nextInt();
+                scan.nextLine();
+
+                if (traderId == 0) {
+                    System.out.println("Deletion cancelled.");
+                    return;
+                }
+
+                if (traderExists(traderId)) {
+                    break;
+                } else {
+                    System.out.println(" Trader ID " + traderId + " does not exist. Please try again.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a valid number.");
+                scan.nextLine();
+            }
+        }
+
+        System.out.print(" ARE YOU SURE you want to PERMANENTLY DELETE trader #" + traderId + "? (yes/no): ");
         String confirm = scan.nextLine().trim().toLowerCase();
 
         if (confirm.equals("yes")) {
@@ -70,6 +121,15 @@ public class AdminOption {
         } else {
             System.out.println(" Deletion cancelled.");
         }
+    }
+
+// ----------------------------------------------------
+// HELPER METHOD TO CHECK IF TRADER EXISTS
+// ----------------------------------------------------
+    private boolean traderExists(int traderId) {
+        String sql = "SELECT trader_id FROM tbl_trader WHERE trader_id = ?";
+        List<Map<String, Object>> result = con.fetchRecords(sql, traderId);
+        return result != null && !result.isEmpty();
     }
 
     // ----------------------------------------------------
@@ -177,41 +237,100 @@ public class AdminOption {
     }
 
     // ----------------------------------------------------
-    // UPDATE ADMIN ACCOUNT
-    // ----------------------------------------------------
+// UPDATE ADMIN ACCOUNT
+// ----------------------------------------------------
     public void updateAdmin(Scanner scan) {
         viewAdmins();
-        System.out.print("Enter Admin ID to update: ");
-        int adminId = scan.nextInt();
-        scan.nextLine();
 
-        System.out.print("Enter new username: ");
+        int adminId;
+        while (true) {
+            System.out.print("Enter Admin ID to update (0 to cancel): ");
+            if (scan.hasNextInt()) {
+                adminId = scan.nextInt();
+                scan.nextLine();
+
+                if (adminId == 0) {
+                    System.out.println("Update cancelled.");
+                    return;
+                }
+
+                if (adminExists(adminId)) {
+                    break;
+                } else {
+                    System.out.println(" Admin ID " + adminId + " does not exist. Please try again.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a valid number.");
+                scan.nextLine();
+            }
+        }
+
+        System.out.print("Enter new username (or 0 to cancel): ");
         String newUser = scan.nextLine().trim();
-        System.out.print("Enter new password: ");
-        String newPass = scan.nextLine().trim();
-
-        System.out.print("Confirm update? (yes/no): ");
-        String confirm = scan.nextLine().trim().toLowerCase();
-        if (!confirm.equals("yes")) {
-            System.out.println(" Update cancelled.");
+        if (newUser.equals("0")) {
+            System.out.println("Update cancelled.");
             return;
         }
 
-        String sql = "UPDATE tbl_admin SET admin_username = ?, admin_password = ? WHERE admin_id = ?";
-        con.updateRecord(sql, newUser, newPass, adminId);
-        System.out.println(" Admin updated successfully!");
+        if (newUser.isEmpty()) {
+            System.out.println(" Username cannot be empty. Update cancelled.");
+            return;
+        }
+
+        System.out.print("Enter new password (or 0 to cancel): ");
+        String newPass = scan.nextLine().trim();
+        if (newPass.equals("0")) {
+            System.out.println("Update cancelled.");
+            return;
+        }
+
+        if (newPass.isEmpty()) {
+            System.out.println(" Password cannot be empty. Update cancelled.");
+            return;
+        }
+
+        System.out.print("Confirm update admin #" + adminId + "? (yes/no): ");
+        String confirm = scan.nextLine().trim().toLowerCase();
+
+        if (confirm.equals("yes")) {
+            String sql = "UPDATE tbl_admin SET admin_username = ?, admin_password = ? WHERE admin_id = ?";
+            con.updateRecord(sql, newUser, newPass, adminId);
+            System.out.println(" Admin updated successfully!");
+        } else {
+            System.out.println(" Update cancelled.");
+        }
     }
 
-    // ----------------------------------------------------
-    // DELETE ADMIN ACCOUNT
-    // ----------------------------------------------------
+// ----------------------------------------------------
+// DELETE ADMIN ACCOUNT
+// ----------------------------------------------------
     public void deleteAdmin(Scanner scan) {
         viewAdmins();
-        System.out.print("Enter Admin ID to delete: ");
-        int adminId = scan.nextInt();
-        scan.nextLine();
 
-        System.out.print("Are you sure you want to DELETE this admin account? (yes/no): ");
+        int adminId;
+        while (true) {
+            System.out.print("Enter Admin ID to delete (0 to cancel): ");
+            if (scan.hasNextInt()) {
+                adminId = scan.nextInt();
+                scan.nextLine();
+
+                if (adminId == 0) {
+                    System.out.println("Deletion cancelled.");
+                    return;
+                }
+
+                if (adminExists(adminId)) {
+                    break;
+                } else {
+                    System.out.println(" Admin ID " + adminId + " does not exist. Please try again.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a valid number.");
+                scan.nextLine();
+            }
+        }
+
+        System.out.print("  WARNING: Are you sure you want to PERMANENTLY DELETE admin account #" + adminId + "? (yes/no): ");
         String confirm = scan.nextLine().trim().toLowerCase();
 
         if (confirm.equals("yes")) {
@@ -222,7 +341,16 @@ public class AdminOption {
             System.out.println(" Deletion cancelled.");
         }
     }
-    
+
+// ----------------------------------------------------
+// HELPER METHOD TO CHECK IF ADMIN EXISTS
+// ----------------------------------------------------
+    private boolean adminExists(int adminId) {
+        String sql = "SELECT admin_id FROM tbl_admin WHERE admin_id = ?";
+        List<Map<String, Object>> result = con.fetchRecords(sql, adminId);
+        return result != null && !result.isEmpty();
+    }
+
     // ----------------------------------------------------
     // 2. MANAGE ADMINS
     // ----------------------------------------------------
@@ -268,7 +396,7 @@ public class AdminOption {
 
         } while (adminChoice != 5);
     }
-    
+
     // ----------------------------------------------------
     // VIEW ALL REPORTS
     // ----------------------------------------------------
@@ -313,31 +441,62 @@ public class AdminOption {
     }
 
     // ----------------------------------------------------
-    // UPDATE REPORT STATUS
-    // ----------------------------------------------------
+// UPDATE REPORT STATUS
+// ----------------------------------------------------
     public void updateReportStatus(Scanner scan) {
-        // Show all reports first so admin can see the IDs
         viewAllReports();
 
-        System.out.print("Enter Report ID to update: ");
-        int reportId = scan.nextInt();
-        scan.nextLine();
+        int reportId;
+        while (true) {
+            System.out.print("Enter Report ID to update (0 to cancel): ");
+            if (scan.hasNextInt()) {
+                reportId = scan.nextInt();
+                scan.nextLine();
 
-        // Verify report exists
-        if (!reportExists(reportId)) {
-            System.out.println(" Report ID " + reportId + " does not exist.");
-            return;
+                if (reportId == 0) {
+                    System.out.println("Update cancelled.");
+                    return;
+                }
+
+                if (reportExists(reportId)) {
+                    break;
+                } else {
+                    System.out.println(" Report ID " + reportId + " does not exist. Please try again.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a valid number.");
+                scan.nextLine();
+            }
         }
 
-        System.out.println("Select new status:");
-        System.out.println("1. Pending");
-        System.out.println("2. Under Review");
-        System.out.println("3. Resolved");
-        System.out.println("4. Dismissed");
-        System.out.print("Enter choice (1-4): ");
+        int statusChoice;
+        while (true) {
+            System.out.println("\nSelect new status:");
+            System.out.println("1. Pending");
+            System.out.println("2. Under Review");
+            System.out.println("3. Resolved");
+            System.out.println("4. Dismissed");
+            System.out.print("Enter choice (1-4, or 0 to cancel): ");
 
-        int statusChoice = scan.nextInt();
-        scan.nextLine();
+            if (scan.hasNextInt()) {
+                statusChoice = scan.nextInt();
+                scan.nextLine();
+
+                if (statusChoice == 0) {
+                    System.out.println("Update cancelled.");
+                    return;
+                }
+
+                if (statusChoice >= 1 && statusChoice <= 4) {
+                    break;
+                } else {
+                    System.out.println(" Invalid choice! Please enter 1-4 or 0 to cancel.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a number.");
+                scan.nextLine();
+            }
+        }
 
         String newStatus;
         switch (statusChoice) {
@@ -354,7 +513,6 @@ public class AdminOption {
                 newStatus = "dismissed";
                 break;
             default:
-                System.out.println(" Invalid choice. Using 'under review'.");
                 newStatus = "under review";
         }
 
@@ -380,15 +538,33 @@ public class AdminOption {
     }
 
     // ----------------------------------------------------
-    // VIEW REPORT DETAILS
-    // ----------------------------------------------------
+// VIEW REPORT DETAILS
+// ----------------------------------------------------
     public void viewReportDetails(Scanner scan) {
-        // Show all reports first so admin can see available IDs
         viewAllReports();
 
-        System.out.print("Enter Report ID to view details: ");
-        int reportId = scan.nextInt();
-        scan.nextLine();
+        int reportId;
+        while (true) {
+            System.out.print("Enter Report ID to view details (0 to cancel): ");
+            if (scan.hasNextInt()) {
+                reportId = scan.nextInt();
+                scan.nextLine();
+
+                if (reportId == 0) {
+                    System.out.println("View details cancelled.");
+                    return;
+                }
+
+                if (reportExists(reportId)) {
+                    break;
+                } else {
+                    System.out.println(" Report ID " + reportId + " does not exist. Please try again.");
+                }
+            } else {
+                System.out.println(" Invalid input! Please enter a valid number.");
+                scan.nextLine();
+            }
+        }
 
         String query = "SELECT r.report_id, r.reporter_id, rep.tbl_FullName AS reporter_name, "
                 + "rep.tbl_Email AS reporter_email, rep.tbl_Contact AS reporter_contact, "
@@ -408,50 +584,43 @@ public class AdminOption {
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                System.out.println("\n=== REPORT DETAILS #" + reportId + " ===");
-                System.out.println("------------------------------------------------------------");
-                System.out.printf("%-20s: %s\n", "Reporter", rs.getString("reporter_name"));
-                System.out.printf("%-20s: %s\n", "Reporter Email", rs.getString("reporter_email"));
-                System.out.printf("%-20s: %s\n", "Reporter Contact", rs.getString("reporter_contact"));
-                System.out.printf("%-20s: %s\n", "Reported Trader", rs.getString("reported_name"));
-                System.out.printf("%-20s: %s\n", "Reported Email", rs.getString("reported_email"));
-                System.out.printf("%-20s: %s\n", "Reported Contact", rs.getString("reported_contact"));
-                System.out.printf("%-20s: %s\n", "Reason", rs.getString("report_reason"));
-                System.out.printf("%-20s: %s\n", "Description", rs.getString("report_description"));
-                System.out.printf("%-20s: %s\n", "Report Date", rs.getString("report_date"));
-                System.out.printf("%-20s: %s\n", "Status", rs.getString("report_status"));
-                System.out.printf("%-20s: %s\n", "Admin Notes",
+                System.out.println("\n" + "════════════════════════════════════════");
+                System.out.println("              REPORT DETAILS #" + reportId);
+                System.out.println("════════════════════════════════════════");
+                System.out.printf("%-20s: %s\n", " Reporter", rs.getString("reporter_name"));
+                System.out.printf("%-20s: %s\n", " Reporter Email", rs.getString("reporter_email"));
+                System.out.printf("%-20s: %s\n", " Reporter Contact", rs.getString("reporter_contact"));
+                System.out.printf("%-20s: %s\n", " Reported Trader", rs.getString("reported_name"));
+                System.out.printf("%-20s: %s\n", " Reported Email", rs.getString("reported_email"));
+                System.out.printf("%-20s: %s\n", " Reported Contact", rs.getString("reported_contact"));
+                System.out.println("----------------------------------------------------------------");
+                System.out.printf("%-20s: %s\n", " Reason", rs.getString("report_reason"));
+                System.out.printf("%-20s: %s\n", " Description", rs.getString("report_description"));
+                System.out.printf("%-20s: %s\n", " Report Date", rs.getString("report_date"));
+                System.out.printf("%-20s: %s\n", " Status", rs.getString("report_status"));
+                System.out.printf("%-20s: %s\n", " Admin Notes",
                         rs.getString("admin_notes") != null ? rs.getString("admin_notes") : "N/A");
-                System.out.printf("%-20s: %s\n", "Resolved Date",
+                System.out.printf("%-20s: %s\n", " Resolved Date",
                         rs.getString("resolved_date") != null ? rs.getString("resolved_date") : "N/A");
-                System.out.println("------------------------------------------------------------");
+                System.out.println("═══════════════════════════════════════════");
             } else {
-                System.out.println(" Report not found with ID: " + reportId);
+                System.out.println("❌ Report not found with ID: " + reportId);
             }
 
         } catch (SQLException e) {
-            System.out.println(" Error retrieving report details: " + e.getMessage());
+            System.out.println("❌ Error retrieving report details: " + e.getMessage());
         }
     }
 
-    // ----------------------------------------------------
-    // HELPER: CHECK IF REPORT EXISTS
-    // ----------------------------------------------------
+// ----------------------------------------------------
+// HELPER METHOD TO CHECK IF REPORT EXISTS
+// ----------------------------------------------------
     private boolean reportExists(int reportId) {
-        String query = "SELECT COUNT(*) FROM tbl_reports WHERE report_id = ?";
-        try (Connection conn = con.connectDB();
-                PreparedStatement pstmt = conn.prepareStatement(query)) {
-
-            pstmt.setInt(1, reportId);
-            ResultSet rs = pstmt.executeQuery();
-            return rs.next() && rs.getInt(1) > 0;
-
-        } catch (SQLException e) {
-            System.out.println(" Error checking report existence: " + e.getMessage());
-            return false;
-        }
+        String sql = "SELECT report_id FROM tbl_reports WHERE report_id = ?";
+        List<Map<String, Object>> result = con.fetchRecords(sql, reportId);
+        return result != null && !result.isEmpty();
     }
-    
+
     // ----------------------------------------------------
     // 3. MANAGE REPORTS
     // ----------------------------------------------------
@@ -498,21 +667,75 @@ public class AdminOption {
         } while (reportChoice != 5);
     }
 
+    public void manageAnnouncements(Scanner scan, int adminId) {
+        Announcement announcement = new Announcement(con);
+
+        int announcementChoice;
+        do {
+            System.out.println("\n--- MANAGE ANNOUNCEMENTS ---");
+            System.out.println("1. Create New Announcement");
+            System.out.println("2. View All Announcements");
+            System.out.println("3. View Active Announcements");
+            System.out.println("4. Edit Announcement");
+            System.out.println("5. Update Announcement Status");
+            System.out.println("6. Delete Announcement");
+            System.out.println("7. Back to Admin Menu");
+            System.out.print("Select option: ");
+
+            while (!scan.hasNextInt()) {
+                System.out.println("Invalid input. Please enter a number.");
+                scan.next();
+                System.out.print("Select option: ");
+            }
+
+            announcementChoice = scan.nextInt();
+            scan.nextLine();
+
+            switch (announcementChoice) {
+                case 1:
+                    announcement.createAnnouncement(scan, adminId);
+                    break;
+                case 2:
+                    announcement.viewAllAnnouncements();
+                    break;
+                case 3:
+                    announcement.viewActiveAnnouncements();
+                    break;
+                case 4:
+                    announcement.editAnnouncement(scan);
+                    break;
+                case 5:
+                    announcement.updateAnnouncementStatus(scan);
+                    break;
+                case 6:
+                    announcement.deleteAnnouncement(scan);
+                    break;
+                case 7:
+                    System.out.println("Returning to Admin Menu...");
+                    break;
+                default:
+                    System.out.println("Invalid option! Please choose 1-7.");
+            }
+
+        } while (announcementChoice != 7);
+    }
+
     // ----------------------------------------------------
     // ADMIN MENU
     // ----------------------------------------------------
-    public void AdminMenu(Scanner scan) {
+    public void AdminMenu(Scanner scan, int adminId) {
         int adminChoice;
         do {
             System.out.println("\n========== ADMIN MENU ==========");
             System.out.println("1. Manage Traders");
             System.out.println("2. Manage Admins");
             System.out.println("3. Manage Reports");
-            System.out.println("4. Log out");
+            System.out.println("4. Manage Announcements");
+            System.out.println("5. Log out");
             System.out.print("Select option: ");
 
             while (!scan.hasNextInt()) {
-                System.out.println(" Invalid input. Please enter a number.");
+                System.out.println("Invalid input. Please enter a number.");
                 scan.next();
                 System.out.print("Select option: ");
             }
@@ -531,12 +754,15 @@ public class AdminOption {
                     manageReports(scan);
                     break;
                 case 4:
-                    System.out.println(" Returning to Main Menu...");
+                    manageAnnouncements(scan, adminId);
+                    break;
+                case 5:
+                    System.out.println("Returning to Main Menu...");
                     break;
                 default:
-                    System.out.println(" Invalid option! Please choose 1–4.");
+                    System.out.println("Invalid option! Please choose 1-5.");
             }
 
-        } while (adminChoice != 4);
+        } while (adminChoice != 5);
     }
 }
